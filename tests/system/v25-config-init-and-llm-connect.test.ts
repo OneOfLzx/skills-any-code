@@ -184,5 +184,50 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     await mock.close();
     await testProject.cleanup();
   }, 240000);
+
+  test('ST-CACHE-LIMIT-002: cache_max_size_mb=0 时禁用磁盘缓存，不产生任何缓存文件', async () => {
+    const testProject = await TestProjectFactory.create('small', false);
+    const mock = await startMockOpenAIServer();
+
+    const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const initResult = await runCli(['init', `-c`, configPath]);
+    expect(initResult.code).toBe(0);
+
+    // 将 LLM 配置指向 Mock 服务，并将 cache_max_size_mb 设为 0（禁用缓存）
+    let yaml = await fs.readFile(configPath, 'utf-8');
+    yaml = yaml
+      .replace('base_url: ""', `base_url: "${mock.baseUrl}"`)
+      .replace('api_key: ""', 'api_key: "test"')
+      .replace('model: ""', 'model: "mock"')
+      .replace('cache_max_size_mb: 500', 'cache_max_size_mb: 0');
+    await fs.writeFile(configPath, yaml, 'utf-8');
+
+    const cacheDir = path.join(os.homedir(), '.cache', 'code-analyze', 'llm');
+
+    // 确保起始状态下缓存目录不存在
+    const existsBefore = await fs.pathExists(cacheDir);
+    if (existsBefore) {
+      await fs.remove(cacheDir);
+    }
+
+    // 多次执行 analyze，验证不会产生任何缓存文件
+    for (let i = 0; i < 2; i++) {
+      const result = await runCli([
+        'analyze',
+        '--path', testProject.path,
+        '-c', configPath,
+      ]);
+      expect(result.code).toBe(0);
+    }
+
+    const existsAfter = await fs.pathExists(cacheDir);
+    if (existsAfter) {
+      const files = await fs.readdir(cacheDir);
+      expect(files.length).toBe(0);
+    }
+
+    await mock.close();
+    await testProject.cleanup();
+  }, 240000);
 });
 

@@ -19,6 +19,7 @@ import type { SkillProvider } from '../domain/interfaces'
 import type { Config } from '../common/config'
 import * as path from 'path'
 import * as fs from 'fs-extra'
+import { OpenAIClient } from '../infrastructure/llm/openai.client'
 
 export class AnalysisAppService {
   private totalObjects = 0
@@ -81,13 +82,18 @@ export class AnalysisAppService {
     const blacklistService = new BlacklistService()
     await blacklistService.load(runConfig.analyze.blacklist, projectRoot)
 
+    // 在进入具体解析流程前进行 LLM 连接/配置校验（设计文档 15.2.3）
+    const llmConfig = params.llmConfig as LLMConfig
+    const llmClient = new OpenAIClient(llmConfig)
+    await llmClient.testConnection(llmConfig)
+
     const analysisService = new AnalysisService(
       gitService,
       storageService,
       blacklistService,
       projectSlug,
       currentCommit,
-      params.llmConfig as LLMConfig
+      llmConfig
     )
     
     const startTime = Date.now()

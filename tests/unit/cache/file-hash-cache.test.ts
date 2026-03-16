@@ -61,7 +61,7 @@ describe('FileHashCache with max size (UT-CACHE-001~003)', () => {
     });
 
     await expect(
-      cache['enforceLimit' as any](),
+      (cache as any).enforceLimit(),
     ).resolves.toBeUndefined();
 
     spy.mockRestore();

@@ -26,7 +26,9 @@ export class OpenAIClient implements ILLMClient {
    * - 在进入任何解析流程前调用；
    * - 配置不完整或服务不可用时抛出带有明确 ErrorCode 的 AppError。
    */
-  async connectTest(): Promise<void> {
+  async testConnection(config: LLMConfig): Promise<void> {
+    // 保持与最新配置一致（允许运行时通过 CLI/环境变量覆盖）
+    this.config = config;
     // 基本配置校验：base_url / api_key / model 不能为空
     if (!this.config.base_url || !this.config.api_key || !this.config.model) {
       throw new AppError(
@@ -81,6 +83,14 @@ export class OpenAIClient implements ILLMClient {
         e,
       );
     }
+  }
+
+  /**
+   * 向后兼容旧版本/测试中使用的 connectTest 名称。
+   * 内部直接代理到 V2.5 的 testConnection。
+   */
+  async connectTest(): Promise<void> {
+    await this.testConnection(this.config);
   }
 
   async call(prompt: string, options?: LLMCallOptions): Promise<LLMResponse> {

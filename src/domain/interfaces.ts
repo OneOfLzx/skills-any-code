@@ -121,6 +121,13 @@ export interface IWorkerPoolService {
 // LLM服务客户端接口
 export interface ILLMClient {
   /**
+   * 连接可用性校验（V2.5）
+   * - 在进入任何解析流程前调用；
+   * - 配置不完整或服务不可用时抛出带有明确 ErrorCode 的 AppError。
+   */
+  testConnection(config: LLMConfig): Promise<void>;
+
+  /**
    * 调用LLM服务执行请求
    * @param prompt 提示词
    * @param options 调用选项

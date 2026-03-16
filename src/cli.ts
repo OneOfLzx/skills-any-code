@@ -32,10 +32,10 @@ program
   .description('初始化或重置配置文件（V2.5）')
   .action(async () => {
     const globalOptions = program.opts();
-    const configPath = globalOptions.config as string | undefined;
+    const cliConfigPath = globalOptions.config as string | undefined;
 
     try {
-      const resolvedPath = configPath || '~/.config/code-analyze/config.yaml';
+      const resolvedPath = cliConfigPath || '~/.config/code-analyze/config.yaml';
       const fsPath = resolvedPath.replace('~', process.env.HOME || process.env.USERPROFILE || '');
       const exists = await fs.pathExists(fsPath);
 
@@ -51,7 +51,7 @@ program
         }
       }
 
-      await configManager.init(configPath);
+      await configManager.init(cliConfigPath);
       logger.success(`配置文件已写入：${fsPath}`);
       process.exit(0);
     } catch (error) {
@@ -90,13 +90,14 @@ program
     try {
       // 加载配置（V2.5：配置未初始化时直接失败，提示先执行 init）
       let config;
+      const cliConfigPath = program.opts().config as string | undefined;
       try {
-        config = await configManager.load(program.opts().config);
+        config = await configManager.load(cliConfigPath);
       } catch (e: any) {
         if (e instanceof AppError && e.code === ErrorCode.CONFIG_NOT_INITIALIZED) {
-          const configPath = (configManager as any).configPath || program.opts().config;
+          const hintPath = cliConfigPath || '~/.config/code-analyze/config.yaml';
           process.stderr.write(
-            `配置文件未初始化，请先执行 "code-analyze init" 创建配置：${configPath}\n`,
+            `配置文件未初始化，请先执行 "code-analyze init" 创建配置：${hintPath}\n`,
           );
           process.exit(1);
           return;
@@ -120,8 +121,11 @@ program
 
       // 处理清空缓存选项
       if (options.clearCache) {
-        const { FileHashCache } = require('./infrastructure/cache/file.hash.cache');
-        const cache = new FileHashCache(config.llm.cache_dir.replace('~', process.env.HOME || process.env.USERPROFILE || ''));
+        const { FileHashCache } = await import('./infrastructure/cache/file.hash.cache');
+        const cache = new FileHashCache({
+          cacheDir: config.llm.cache_dir.replace('~', process.env.HOME || process.env.USERPROFILE || ''),
+          maxSizeMb: config.llm.cache_max_size_mb,
+        });
         await cache.clear();
         logger.info('LLM缓存已清空');
       }
@@ -141,17 +145,6 @@ program
       };
 
       const analysisService = new AnalysisAppService();
-
-      // V2.5：在进入解析流程前先做一次 LLM 连接可用性校验
-      try {
-        const { OpenAIClient } = await import('./infrastructure/llm/openai.client');
-        const client = new OpenAIClient(config.llm);
-        await client.connectTest();
-      } catch (e: any) {
-        logger.error(`LLM 连接/配置校验失败: ${e?.message || String(e)}`);
-        process.exit(1);
-        return;
-      }
 
       // 远程LLM服务风险仅日志告警，不再阻塞交互（设计文档 14.1.2）
       if (config.llm.base_url && !config.llm.base_url.includes('localhost') && !config.llm.base_url.includes('127.0.0.1')) {
@@ -176,47 +169,8 @@ program
       };
 
       let result;
-      try {
-        // 执行解析
-        result = await analysisService.runAnalysis(paramsWithProgress);
-      } catch (error: any) {
-        progressBar.stop();
-        if (error.code === ErrorCode.LLM_CALL_FAILED || 
-            error.code === ErrorCode.LLM_RATE_LIMITED || 
-            error.code === ErrorCode.LLM_TIMEOUT) {
-          // LLM调用失败，弹出交互选项
-          const choice = await select('LLM服务调用失败，请选择操作：', [
-            '重试当前文件',
-            '跳过当前文件继续解析',
-            '终止整个解析流程'
-          ]);
-
-          if (choice === '重试当前文件') {
-            logger.info('正在重试...');
-            result = await analysisService.runAnalysis(analysisParams);
-          } else if (choice === '跳过当前文件继续解析') {
-            logger.info('跳过当前文件，继续解析其他文件...');
-            // 这里需要重新执行跳过逻辑，暂时先返回结果
-            result = {
-              success: true,
-              code: ErrorCode.SUCCESS,
-              message: '解析完成，部分文件已跳过',
-              data: {
-                projectName: analysisParams.path,
-                mode: analysisParams.mode,
-                analyzedFilesCount: 0,
-                duration: 0,
-                summaryPath: ''
-              }
-            };
-          } else {
-            logger.info('用户终止解析流程');
-            process.exit(0);
-          }
-        } else {
-          throw error;
-        }
-      }
+      // 执行解析（V2.4+：不再在 CLI 中做交互式错误处理，所有 LLM 错误由应用层统一抛出）
+      result = await analysisService.runAnalysis(paramsWithProgress);
       
       progressBar.stop();
 
@@ -254,13 +208,14 @@ program
   .action(async (absolutePath: string, options: { project?: string; outputDir?: string }) => {
     try {
       let config;
+      const cliConfigPath = program.opts().config as string | undefined;
       try {
-        config = await configManager.load(program.opts().config);
+        config = await configManager.load(cliConfigPath);
       } catch (e: any) {
         if (e instanceof AppError && e.code === ErrorCode.CONFIG_NOT_INITIALIZED) {
-          const configPath = (configManager as any).configPath || program.opts().config;
+          const hintPath = cliConfigPath || '~/.config/code-analyze/config.yaml';
           process.stderr.write(
-            `配置文件未初始化，请先执行 "code-analyze init" 创建配置：${configPath}\n`,
+            `配置文件未初始化，请先执行 "code-analyze init" 创建配置：${hintPath}\n`,
           );
           process.exit(1);
           return;
@@ -299,13 +254,14 @@ program
   .action(async (options) => {
     try {
       let config;
+      const cliConfigPath = program.opts().config as string | undefined;
       try {
-        config = await configManager.load(program.opts().config);
+        config = await configManager.load(cliConfigPath);
       } catch (e: any) {
         if (e instanceof AppError && e.code === ErrorCode.CONFIG_NOT_INITIALIZED) {
-          const configPath = (configManager as any).configPath || program.opts().config;
+          const hintPath = cliConfigPath || '~/.config/code-analyze/config.yaml';
           process.stderr.write(
-            `配置文件未初始化，请先执行 "code-analyze init" 创建配置：${configPath}\n`,
+            `配置文件未初始化，请先执行 "code-analyze init" 创建配置：${hintPath}\n`,
           );
           process.exit(1);
           return;
