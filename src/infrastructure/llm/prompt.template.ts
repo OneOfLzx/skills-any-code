@@ -1,7 +1,7 @@
 // ===== 三步协议：单文件（需求 10.5.3 / 10.9.1）=====
-/** 第一步：仅提取结构信息，不包含 summary/description */
+/** 第一步：仅提取结构信息（类 / 全局变量 / 全局函数），不包含 summary/description 及基础信息 */
 export const FILE_STRUCTURE_PROMPT = `
-请仅提取以下代码文件中的「类定义」和「全局函数」结构，返回严格的JSON，不要包含任何其他文本。不要生成功能描述或概述。
+请仅提取以下代码文件中的「类定义」「全局变量」「全局函数」结构，返回严格的JSON，不要包含任何其他文本。不要生成功能描述、概述或基础信息（语言、行数、依赖等）。
 
 文件路径: {{filePath}}
 文件内容:
@@ -9,10 +9,6 @@ export const FILE_STRUCTURE_PROMPT = `
 
 返回的JSON结构（仅包含以下字段）：
 {
-  "name": "文件名（不含路径）",
-  "language": "代码语言类型",
-  "linesOfCode": 代码行数（数字）,
-  "dependencies": ["依赖的模块列表"],
   "classes": [
     {
       "name": "类名",
@@ -31,7 +27,7 @@ export const FILE_STRUCTURE_PROMPT = `
   ]
 }
 
-若无对应内容则返回空数组；不要输出 summary、description、classDiagram、sequenceDiagram。
+若无对应内容则返回空数组；不要输出 summary、description、classDiagram、sequenceDiagram，也不要输出 language、linesOfCode、dependencies 等基础信息。
 `;
 
 /** 第二步：仅生成功能描述（200字以内） */
@@ -70,74 +66,57 @@ export const MERGE_STRUCTURE_PROMPT = `
 
 返回的JSON结构（仅包含以下字段）：
 {
-  "name": "文件名（不含路径）",
-  "language": "代码语言类型",
-  "linesOfCode": 总代码行数（数字）,
-  "dependencies": ["所有依赖去重后的列表"],
-  "classes": [ 合并去重后的所有类定义 ],
-  "functions": [ 合并去重后的所有函数定义 ]
-}
-
-classes/functions 的每项格式与分片中的一致。不要输出 summary、description、classDiagram、sequenceDiagram。
-`;
-
-export const CODE_ANALYSIS_PROMPT = `
-请分析以下代码文件，返回严格的JSON格式结果，不要包含任何其他文本。
-
-文件路径: {{filePath}}
-文件内容:
-{{fileContent}}
-
-需要返回的JSON结构如下：
-{
-  "name": "文件名（不含路径）",
-  "language": "代码语言类型",
-  "linesOfCode": 代码行数（数字）,
-  "dependencies": ["依赖的模块列表"],
-  "summary": "文件核心功能描述（100字以内）",
   "classes": [
     {
       "name": "类名",
       "extends": "继承的父类名（没有则为null）",
       "implements": ["实现的接口列表（没有则为空数组）"],
       "methods": [
-        {
-          "name": "方法名",
-          "signature": "方法签名",
-          "description": "方法功能描述",
-          "visibility": "public/private/protected"
-        }
+        { "name": "方法名", "signature": "方法签名", "description": "方法功能描述", "visibility": "public/private/protected" }
       ],
       "properties": [
-        {
-          "name": "属性名",
-          "type": "属性类型",
-          "description": "属性描述",
-          "visibility": "public/private/protected"
-        }
+        { "name": "属性名", "type": "属性类型", "description": "属性描述", "visibility": "public/private/protected" }
       ]
     }
   ],
   "functions": [
-    {
-      "name": "函数名",
-      "signature": "函数签名",
-      "description": "函数功能描述"
-    }
-  ],
-  "classDiagram": "Mermaid类图代码（如果有类的话）",
-  "sequenceDiagram": "Mermaid时序图代码，展示核心方法调用流程"
+    { "name": "函数名", "signature": "函数签名", "description": "函数功能描述" }
+  ]
 }
 
-注意：
-1. 严格按照JSON格式返回，不要有任何额外说明
-2. 如果没有对应的内容，返回空数组或空字符串
-3. Mermaid代码要合法，可直接渲染
-4. 所有描述用中文
+classes/functions 的每项格式与分片中的一致。不要输出 summary、description、classDiagram、sequenceDiagram。
+`;
+
+// ===== 目录两步协议（需求 10.6.3 / 10.9.3）=====
+/** 目录第一步：根据子项精简信息生成功能描述（description，200 字以内） */
+export const DIRECTORY_DESCRIPTION_PROMPT = `
+你是一个代码结构分析助手。下面是某个目录下所有直接子目录和子文件的精简信息，请用一段不超过 200 字的中文自然语言，总结该目录在项目中的功能定位和主要职责。
+
+只返回一个 JSON对象：{"description": "你的功能描述"}，不要输出任何其他内容。
+
+子目录和子文件精简信息（JSON）：
+{{childrenJson}}
+`;
+
+/** 目录第二步：在同一会话中基于功能描述生成概述（summary，100 字以内） */
+export const DIRECTORY_SUMMARY_PROMPT = `
+基于下面的目录功能描述和子项精简信息，请用一句不超过 100 字的中文话，总结该目录的核心作用，侧重高层概括，避免细节展开。
+
+只返回一个 JSON 对象：{"summary": "你的概述"}，不要输出任何其他内容。
+
+目录功能描述：
+{{description}}
+
+子目录和子文件精简信息（JSON）：
+{{childrenJson}}
+`;
+
+export const CODE_ANALYSIS_PROMPT = `
+（已废弃的旧版一次性解析提示，保留为空以兼容现有引用，不再用于主流程）
 `;
 
 export const CHUNK_ANALYSIS_PROMPT = `
-请分析以下代码文件分片，返回严格的JSON格式结果，不要包含任何其他文本。
+请分析以下代码文件分片，提取当前分片中「可确定的类定义、全局变量、全局函数」结构信息，返回严格的JSON格式结果，不要包含任何其他文本。不要生成功能描述、概述或图表。
 
 文件路径: {{filePath}}
 分片ID: {{chunkId}}
@@ -145,13 +124,8 @@ export const CHUNK_ANALYSIS_PROMPT = `
 {{chunkContent}}
 上下文: {{context}}
 
-需要返回的JSON结构如下：
+需要返回的JSON结构如下（仅包含以下字段）：
 {
-  "basicInfo": {
-    "language": "代码语言类型（可选）",
-    "dependencies": ["依赖的模块列表"],
-    "linesOfCode": 本分片代码行数
-  },
   "classes": [
     {
       "name": "类名",
@@ -181,48 +155,13 @@ export const CHUNK_ANALYSIS_PROMPT = `
       "signature": "函数签名",
       "description": "函数功能描述"
     }
-  ],
-  "partialDiagrams": {
-    "classDiagram": "本分片相关的Mermaid类图代码片段",
-    "sequenceDiagram": "本分片相关的Mermaid时序图代码片段"
-  },
-  "summary": "本分片核心功能描述"
+  ]
 }
 
 注意：
 1. 严格按照JSON格式返回，不要有任何额外说明
 2. 如果没有对应的内容，返回空数组或空字符串
 3. 只分析当前分片的内容，上下文仅作参考
-4. 所有描述用中文
-`;
-
-export const MERGE_CHUNKS_PROMPT = `
-请合并以下多个代码分片的分析结果，生成完整的文件分析结果，返回严格的JSON格式。
-
-文件路径: {{filePath}}
-分片分析结果列表:
-{{chunkResults}}
-
-需要返回的完整JSON结构如下：
-{
-  "name": "文件名（不含路径）",
-  "language": "代码语言类型",
-  "linesOfCode": 总代码行数（数字）,
-  "dependencies": ["所有依赖的模块列表，去重"],
-  "summary": "文件整体核心功能描述（100字以内）",
-  "classes": [
-    合并后的所有类定义，去重，合并同一个类的不同部分
-  ],
-  "functions": [
-    合并后的所有函数定义，去重
-  ],
-  "classDiagram": "合并后的完整Mermaid类图代码",
-  "sequenceDiagram": "合并后的完整Mermaid时序图代码，展示核心方法调用流程"
-}
-
-注意：
-1. 严格按照JSON格式返回，不要有任何额外说明
-2. 合并时去重相同的类、方法、函数
-3. 确保类图和时序图完整合法，可直接渲染
-4. 所有描述用中文
+4. 不要输出 basicInfo、partialDiagrams、summary 等字段
+5. 所有描述用中文
 `;

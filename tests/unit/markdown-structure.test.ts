@@ -19,11 +19,8 @@ const FILE_HEADING_WHITELIST = new Set([
   '基本信息',
   '概述',
   '功能描述',
-  '依赖',
   '类定义',
-  '函数',
-  '类图',
-  '时序图',
+  '全局函数',
 ]);
 
 /** 从 Markdown 中提取所有二级标题（## 标题） */
@@ -88,8 +85,6 @@ describe('13.2 文件级 Markdown 结构 (UT-FILE-MD-STRUCT)', () => {
       summary: 'summary',
       classes: [],
       functions: [],
-      classDiagram: '',
-      sequenceDiagram: '',
       lastAnalyzedAt: new Date().toISOString(),
       commitHash: 'abc',
     };
@@ -140,8 +135,6 @@ describe('13.2 文件级 Markdown 结构 (UT-FILE-MD-STRUCT)', () => {
       summary: 'summary',
       classes,
       functions: [],
-      classDiagram: '',
-      sequenceDiagram: '',
       lastAnalyzedAt: new Date().toISOString(),
       commitHash: 'abc',
     };

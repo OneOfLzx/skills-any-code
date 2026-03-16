@@ -25,6 +25,11 @@ export class BlacklistService implements IBlacklistService {
   }
 
   isIgnored(relativePath: string): boolean {
-    return this.ig.ignores(relativePath)
+    // 1. 统一为正斜杠（Windows path.relative 可能返回反斜杠）
+    let normalized = relativePath.replace(/\\/g, '/')
+    // 2. 去掉 leading ./ 或 /（ignore 库拒绝此类路径并抛错，见 REGEX_TEST_INVALID_PATH）
+    // path.relative 在部分 Windows 场景下可能返回 ".\" 前缀，归一化后为 "./"，会导致 ignore 库抛出 RangeError
+    normalized = normalized.replace(/^\.\//, '').replace(/^\/+/, '')
+    return this.ig.ignores(normalized)
   }
 }

@@ -2,6 +2,7 @@ import { configManager } from '../../src/common/config';
 import fs from 'fs-extra';
 import path from 'path';
 import os from 'os';
+import { Config } from '../../src/common/config';
 
 describe('ConfigManager 配置路径测试 (UT-CFG-*)', () => {
   const originalHome = process.env.HOME;
@@ -71,6 +72,70 @@ describe('ConfigManager 配置路径测试 (UT-CFG-*)', () => {
     
     const expectedPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
     expect((configManager as any).configPath).toBe(expectedPath);
+  });
+
+  // ===== V2.5 配置初始化与默认值测试 (UT-CONFIG-001~004 / UT-BLACKLIST-IMG-001) =====
+
+  test('UT-CONFIG-001: 配置文件不存在时 load 表示未初始化且不自动创建文件', async () => {
+    const customPath = path.join(tempHome, 'v25-missing-config.yaml');
+
+    const existsBefore = await fs.pathExists(customPath);
+    expect(existsBefore).toBe(false);
+
+    await expect(configManager.load(customPath)).rejects.toMatchObject({
+      message: expect.stringContaining('配置文件未初始化'),
+    });
+
+    const existsAfter = await fs.pathExists(customPath);
+    expect(existsAfter).toBe(false);
+  });
+
+  test('UT-CONFIG-002: init 会在配置不存在时创建默认配置文件', async () => {
+    const customPath = path.join(tempHome, 'v25-init-config.yaml');
+
+    await configManager.init(customPath);
+
+    const exists = await fs.pathExists(customPath);
+    expect(exists).toBe(true);
+
+    const content = await fs.readFile(customPath, 'utf-8');
+    const loaded = (await import('js-yaml')).default.load(content) as Config;
+    const defaultConfig = (configManager as any).config as Config;
+
+    expect(loaded).toEqual(defaultConfig);
+  });
+
+  test('UT-V25-CFG-LLM-DEFAULTS: 默认 LLM 配置 base_url/api_key/model 为空且包含 cache_max_size_mb', async () => {
+    try {
+      await configManager.load(path.join(tempHome, 'v25-defaults.yaml'));
+    } catch {
+      // 预期：因为文件不存在会抛「未初始化」，但内部仍会生成默认配置对象
+    }
+    const defaultConfig = (configManager as any).config as Config;
+    expect(defaultConfig.llm.base_url).toBe('');
+    expect(defaultConfig.llm.api_key).toBe('');
+    expect(defaultConfig.llm.model).toBe('');
+    expect(typeof defaultConfig.llm.cache_max_size_mb).toBe('number');
+    expect(defaultConfig.llm.cache_max_size_mb).toBeGreaterThanOrEqual(0);
+  });
+
+  test('UT-BLACKLIST-IMG-001: 默认黑名单应包含常见图片与图标扩展名', async () => {
+    try {
+      await configManager.load(path.join(tempHome, 'v25-blacklist.yaml'));
+    } catch {
+      // 同上：忽略未初始化异常，仅使用默认配置对象
+    }
+    const defaultConfig = (configManager as any).config as Config;
+    const patterns = defaultConfig.analyze.blacklist as string[];
+
+    const required = [
+      '*.png', '*.jpg', '*.jpeg', '*.gif',
+      '*.bmp', '*.svg', '*.webp', '*.ico',
+    ];
+
+    for (const p of required) {
+      expect(patterns).toContain(p);
+    }
   });
 
   // ===== V2.3 新增配置项测试 (UT-CLI-007 / UT-V23-CFG-*) =====

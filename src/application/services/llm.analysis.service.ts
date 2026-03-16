@@ -1,11 +1,13 @@
-import { ILLMClient, IFileSplitter, IAnalysisCache } from '../../domain/interfaces';
-import { FileAnalysis, LLMConfig } from '../../common/types';
+import type { ILLMClient, IFileSplitter, IAnalysisCache } from '../../domain/interfaces';
+import type { FileAnalysis, LLMConfig, FileChunkAnalysis } from '../../common/types';
 import {
   FILE_STRUCTURE_PROMPT,
   FILE_DESCRIPTION_PROMPT,
   FILE_SUMMARY_PROMPT,
   PARSE_RETRY_HINT,
-  CHUNK_ANALYSIS_PROMPT
+  CHUNK_ANALYSIS_PROMPT,
+  DIRECTORY_DESCRIPTION_PROMPT,
+  DIRECTORY_SUMMARY_PROMPT
 } from '../../infrastructure/llm/prompt.template';
 import Mustache from 'mustache';
 import { AppError, ErrorCode } from '../../common/errors';
@@ -29,8 +31,6 @@ export class LLMAnalysisService {
   private fileSplitter: IFileSplitter;
   private cache: IAnalysisCache;
   private config: LLMConfig;
-  public totalTokensUsed = 0;
-  public totalCalls = 0;
 
   constructor(
     llmClient: ILLMClient,
@@ -80,17 +80,13 @@ export class LLMAnalysisService {
   private async analyzeSmallFile(filePath: string, fileContent: string): Promise<FileAnalysis> {
     const opts = { temperature: 0.1 };
 
-    // 第一步：仅提取结构
+    // 第一步：仅提取结构（classes / globalVariables / globalFunctions），不包含基础信息
     const structure = await this.callWithParseRetry(
       Mustache.render(FILE_STRUCTURE_PROMPT, { filePath, fileContent }),
       opts,
       (content) => {
         const o = JSON.parse(content);
         return {
-          name: o.name ?? path.basename(filePath),
-          language: o.language ?? '',
-          linesOfCode: typeof o.linesOfCode === 'number' ? o.linesOfCode : 0,
-          dependencies: Array.isArray(o.dependencies) ? o.dependencies : [],
           classes: Array.isArray(o.classes) ? o.classes : [],
           functions: Array.isArray(o.functions) ? o.functions : []
         };
@@ -113,22 +109,47 @@ export class LLMAnalysisService {
       (content) => parseSingleField(content, 'summary')
     );
 
+    // 基础信息由程序侧负责（设计文档 13.2.2）
+    const name = path.basename(filePath);
+    const language = this.detectLanguage(filePath);
+    const linesOfCode = fileContent.split(/\r?\n/).length;
+
     return {
       type: 'file',
       path: filePath,
-      name: structure.name,
-      language: structure.language,
-      linesOfCode: structure.linesOfCode,
-      dependencies: structure.dependencies,
+      name,
+      language,
+      linesOfCode,
+      dependencies: [],
       description,
       summary,
       classes: structure.classes,
       functions: structure.functions,
-      classDiagram: '',
-      sequenceDiagram: '',
       lastAnalyzedAt: new Date().toISOString(),
       commitHash: ''
     };
+  }
+
+  private detectLanguage(filePath: string): string {
+    const ext = path.extname(filePath).toLowerCase();
+    switch (ext) {
+      case '.ts':
+      case '.tsx':
+        return 'TypeScript';
+      case '.js':
+      case '.jsx':
+        return 'JavaScript';
+      case '.py':
+        return 'Python';
+      case '.java':
+        return 'Java';
+      case '.go':
+        return 'Go';
+      case '.cs':
+        return 'C#';
+      default:
+        return '';
+    }
   }
 
   /** 单次调用：解析失败则仅重试该次一次，不重做已成功步骤（需求 10.9.2）。 */
@@ -144,7 +165,6 @@ export class LLMAnalysisService {
           attempt === 1 ? prompt + PARSE_RETRY_HINT : prompt,
           { ...options, retries: 0 }
         );
-        this.updateStats(response.usage.totalTokens);
         return parseFn(response.content);
       } catch (e) {
         lastError = e;
@@ -161,7 +181,7 @@ export class LLMAnalysisService {
     // 分片
     const chunks = await this.fileSplitter.split(fileContent, this.config.context_window_size * 0.7);
     
-    // 并行解析所有分片
+    // 并行解析所有分片（仅提取结构）
     const chunkAnalysisPromises = chunks.map(async (chunk) => {
       const prompt = Mustache.render(CHUNK_ANALYSIS_PROMPT, {
         filePath,
@@ -171,12 +191,13 @@ export class LLMAnalysisService {
       });
 
       const response = await this.llmClient.call(prompt, { temperature: 0.1 });
-      this.updateStats(response.usage.totalTokens);
 
+      const parsed = JSON.parse(response.content);
       return {
-        ...JSON.parse(response.content),
-        chunkId: chunk.id
-      };
+        chunkId: chunk.id,
+        classes: Array.isArray(parsed.classes) ? parsed.classes : [],
+        functions: Array.isArray(parsed.functions) ? parsed.functions : []
+      } as FileChunkAnalysis;
     });
 
     const chunkResults = await Promise.all(chunkAnalysisPromises);
@@ -185,15 +206,32 @@ export class LLMAnalysisService {
     return this.fileSplitter.merge(chunkResults, filePath);
   }
 
-  private updateStats(tokens: number): void {
-    this.totalCalls++;
-    this.totalTokensUsed += tokens;
+  /**
+   * 目录两步协议（需求 10.6.3 / 10.9.3）：基于子项精简信息先生成 description，再生成 summary。
+   */
+  async analyzeDirectory(
+    childrenDirs: Array<{ name: string; summary: string; description: string }>,
+    childrenFiles: Array<{ name: string; summary: string; description: string }>
+  ): Promise<{ description: string; summary: string }> {
+    const opts = { temperature: 0.1 };
+    const payload = { childrenDirs, childrenFiles };
+    const childrenJson = JSON.stringify(payload, null, 2);
+
+    // 第一步：功能描述
+    const description = await this.callWithParseRetry(
+      Mustache.render(DIRECTORY_DESCRIPTION_PROMPT, { childrenJson }),
+      opts,
+      (content) => parseSingleField(content, 'description')
+    );
+
+    // 第二步：概述
+    const summary = await this.callWithParseRetry(
+      Mustache.render(DIRECTORY_SUMMARY_PROMPT, { description, childrenJson }),
+      opts,
+      (content) => parseSingleField(content, 'summary')
+    );
+
+    return { description, summary };
   }
 
-  getStats(): { totalCalls: number; totalTokensUsed: number } {
-    return {
-      totalCalls: this.totalCalls,
-      totalTokensUsed: this.totalTokensUsed
-    };
-  }
 }

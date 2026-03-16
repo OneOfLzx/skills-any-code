@@ -100,9 +100,6 @@ export class CodeSplitter implements IFileSplitter {
         const o = JSON.parse(content);
         return {
           name: o.name ?? path.basename(filePath),
-          language: o.language ?? '',
-          linesOfCode: typeof o.linesOfCode === 'number' ? o.linesOfCode : 0,
-          dependencies: Array.isArray(o.dependencies) ? o.dependencies : [],
           classes: Array.isArray(o.classes) ? o.classes : [],
           functions: Array.isArray(o.functions) ? o.functions : []
         };
@@ -125,19 +122,20 @@ export class CodeSplitter implements IFileSplitter {
       (content) => parseSingleField(content, 'summary')
     );
 
+    // 基础信息由程序侧负责，此处仅返回语义部分，路径等由调用方补充
+    const name = path.basename(filePath);
+
     return {
       type: 'file',
       path: filePath,
-      name: structure.name,
-      language: structure.language,
-      linesOfCode: structure.linesOfCode,
-      dependencies: structure.dependencies,
+      name,
+      language: '',
+      linesOfCode: 0,
+      dependencies: [],
       description,
       summary,
       classes: structure.classes,
       functions: structure.functions,
-      classDiagram: '',
-      sequenceDiagram: '',
       lastAnalyzedAt: new Date().toISOString(),
       commitHash: ''
     };

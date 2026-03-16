@@ -87,4 +87,60 @@ describe('黑名单过滤 (V23-BL)', () => {
     expect(service.isIgnored('file.tmp')).toBe(true);
     expect(service.isIgnored('file.ts')).toBe(false);
   });
+
+  it('UT-V23-BL-WINPATH-001: Windows 分隔符路径仍能被黑名单过滤', async () => {
+    const service = new BlacklistService();
+    await service.load(['.code-analyze-result/'], testProjectDir);
+
+    expect(service.isIgnored('.code-analyze-result\\index.md')).toBe(true);
+    expect(service.isIgnored('src\\index.ts')).toBe(false);
+  });
+
+  /**
+   * 测试文档 14.3 根因：path.relative 在部分 Windows 场景下可能返回 "./" 或 ".\" 前缀，
+   * 归一化后 ignore 库会拒绝并抛错。本用例验证路径归一化后仍能正确匹配。
+   */
+  it('UT-V23-BL-PREFIX-001: ./ 或 / 前缀路径归一化后仍被黑名单过滤', async () => {
+    const service = new BlacklistService();
+    await service.load(['.code-analyze-result/'], testProjectDir);
+
+    expect(service.isIgnored('./.code-analyze-result/')).toBe(true);
+    expect(service.isIgnored('./.code-analyze-result/index.md')).toBe(true);
+    expect(service.isIgnored('/.code-analyze-result/index.md')).toBe(true);
+    expect(service.isIgnored('.\\.code-analyze-result\\index.md')).toBe(true);
+    expect(service.isIgnored('./src/index.ts')).toBe(false);
+  });
+
+  /**
+   * 测试文档 14 根因分析延伸：.gitignore 否定规则会覆盖全局黑名单。
+   * 若用户项目 .gitignore 含 !*.md 等，可能使 .code-analyze-result 内文件被解析。
+   */
+  it('UT-V23-BL-NEGATE-001: .gitignore 否定规则不应覆盖 .code-analyze-result 黑名单', async () => {
+    await fs.writeFile(
+      path.join(testProjectDir, '.gitignore'),
+      '.code-analyze-result/\n!*.md\n',
+      'utf-8'
+    );
+    const service = new BlacklistService();
+    await service.load(['.code-analyze-result/'], testProjectDir);
+
+    // .code-analyze-result 由全局黑名单与 .gitignore 共同忽略，否定规则 !*.md 不应解禁其下的 .md
+    expect(service.isIgnored('.code-analyze-result/index.md')).toBe(true);
+    expect(service.isIgnored('.code-analyze-result/sub/readme.md')).toBe(true);
+  });
+
+  it('UT-BLACKLIST-IMG-002: .code-analyze-ignore 中的 ! 规则可解封部分图片', async () => {
+    await fs.writeFile(
+      path.join(testProjectDir, '.code-analyze-ignore'),
+      '!assets/logo.png\n',
+      'utf-8'
+    );
+
+    const service = new BlacklistService();
+    await service.load(['*.png', '*.jpg'], testProjectDir);
+
+    expect(service.isIgnored('assets/logo.png')).toBe(false);
+    expect(service.isIgnored('assets/other.png')).toBe(true);
+    expect(service.isIgnored('docs/readme.jpg')).toBe(true);
+  });
 });

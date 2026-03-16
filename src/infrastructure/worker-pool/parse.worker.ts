@@ -21,7 +21,10 @@ async function parseFile(
   // 初始化LLM相关服务
   const llmClient = new OpenAIClient(llmConfig)
   const fileSplitter = new CodeSplitter(llmClient)
-  const cache = new FileHashCache(llmConfig.cache_dir)
+  const cache = new FileHashCache({
+    cacheDir: llmConfig.cache_dir,
+    maxSizeMb: llmConfig.cache_max_size_mb,
+  })
   const llmAnalysisService = new LLMAnalysisService(llmClient, fileSplitter, cache, llmConfig)
 
   const result = await llmAnalysisService.analyzeFile(filePath, fileContent, fileHash)
@@ -30,37 +33,27 @@ async function parseFile(
 
 async function aggregateDirectory(dirPath: string, childrenResults: Array<FileAnalysis | DirectoryAnalysis>): Promise<DirectoryAnalysis> {
   const name = path.basename(dirPath)
-  
-  // 计算目录依赖
-  const allDependencies = new Set<string>()
-  childrenResults.forEach(child => {
-    child.dependencies.forEach(dep => allDependencies.add(dep))
-  })
+  const fileChildren = childrenResults.filter(c => c.type === 'file') as FileAnalysis[]
+  const dirChildren = childrenResults.filter(c => c.type === 'directory') as DirectoryAnalysis[]
 
-  // 生成目录结构
+  const description = `该目录包含 ${fileChildren.length} 个文件和 ${dirChildren.length} 个子目录，用于组织相关源码与子模块。`
+  const summary = `包含 ${childrenResults.length} 个子项的目录`
+
   const structure = childrenResults.map(child => ({
     name: child.name,
     type: child.type,
     description: child.summary.substring(0, 100)
   }))
 
-  // 生成模块图
-  let moduleDiagram = '```mermaid\nflowchart LR\n'
-  childrenResults.forEach((child, index) => {
-    moduleDiagram += `  node${index}[${child.name}]:::${child.type}\n`
-  })
-  moduleDiagram += '  classDef file fill:#f9f,stroke:#333,stroke-width:2px\n'
-  moduleDiagram += '  classDef directory fill:#9f9,stroke:#333,stroke-width:2px\n'
-  moduleDiagram += '```'
-
   return {
     type: 'directory',
     path: dirPath,
     name,
-    summary: `Directory containing ${childrenResults.length} items`,
+    description,
+    summary,
+    childrenDirsCount: dirChildren.length,
+    childrenFilesCount: fileChildren.length,
     structure,
-    dependencies: Array.from(allDependencies),
-    moduleDiagram,
     lastAnalyzedAt: new Date().toISOString(),
     commitHash: ''
   }
@@ -95,35 +88,6 @@ async function validateResult(parentResult: DirectoryAnalysis, childResult: File
       originalContent: JSON.stringify(parentResult.structure),
       correctedContent: JSON.stringify((corrections as Partial<DirectoryAnalysis>).structure),
       reason: `Child item ${childResult.name} missing from directory structure`
-    }
-
-    return {
-      valid: false,
-      corrections,
-      log
-    }
-  }
-
-  // 检查依赖一致性
-  const childDependencies = new Set(childResult.dependencies)
-  const parentDependencies = new Set(parentResult.dependencies)
-  const missingDependencies = Array.from(childDependencies).filter(dep => !parentDependencies.has(dep))
-
-  if (missingDependencies.length > 0) {
-    // 修正：将缺失的依赖添加到父项
-    corrections.dependencies = [
-      ...parentResult.dependencies,
-      ...missingDependencies
-    ]
-
-    log = {
-      id: crypto.randomUUID(),
-      timestamp: new Date().toISOString(),
-      path: parentResult.path,
-      type: 'inconsistency',
-      originalContent: JSON.stringify(parentResult.dependencies),
-      correctedContent: JSON.stringify(corrections.dependencies),
-      reason: `Missing dependencies in parent directory: ${missingDependencies.join(', ')}`
     }
 
     return {

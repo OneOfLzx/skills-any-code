@@ -8,7 +8,7 @@ import { AnalysisAppService } from './application/analysis.app.service';
 import { configManager } from './common/config';
 import { logger } from './common/logger';
 import { confirm, progressBar, select } from './common/ui';
-import { ErrorCode } from './common/errors';
+import { AppError, ErrorCode } from './common/errors';
 import { LocalStorageService } from './infrastructure/storage.service';
 import { GitService } from './infrastructure/git.service';
 import { generateProjectSlug } from './common/utils';
@@ -25,6 +25,40 @@ program
   .option('-c, --config <path>', '指定配置文件路径', '~/.config/code-analyze/config.yaml')
   .option('-o, --output <format>', '输出格式：text/json/markdown', 'text')
   .option('--log-level <level>', '日志级别：debug/info/warn/error');
+
+// init 子命令：显式初始化配置文件（V2.5）
+program
+  .command('init')
+  .description('初始化或重置配置文件（V2.5）')
+  .action(async () => {
+    const globalOptions = program.opts();
+    const configPath = globalOptions.config as string | undefined;
+
+    try {
+      const resolvedPath = configPath || '~/.config/code-analyze/config.yaml';
+      const fsPath = resolvedPath.replace('~', process.env.HOME || process.env.USERPROFILE || '');
+      const exists = await fs.pathExists(fsPath);
+
+      if (exists) {
+        const overwrite = await confirm(
+          `检测到配置文件已存在：${fsPath}，是否覆盖为默认配置？（默认：否）`,
+          false,
+        );
+        if (!overwrite) {
+          logger.info('用户选择保留现有配置，init 退出');
+          process.exit(0);
+          return;
+        }
+      }
+
+      await configManager.init(configPath);
+      logger.success(`配置文件已写入：${fsPath}`);
+      process.exit(0);
+    } catch (error) {
+      logger.error('初始化配置失败', error as Error);
+      process.exit(1);
+    }
+  });
 
 // analyze子命令
 program
@@ -54,8 +88,21 @@ program
   .option('--clear-cache', '清空现有LLM解析缓存后再执行解析')
   .action(async (options) => {
     try {
-      // 加载配置
-      const config = await configManager.load(program.opts().config);
+      // 加载配置（V2.5：配置未初始化时直接失败，提示先执行 init）
+      let config;
+      try {
+        config = await configManager.load(program.opts().config);
+      } catch (e: any) {
+        if (e instanceof AppError && e.code === ErrorCode.CONFIG_NOT_INITIALIZED) {
+          const configPath = (configManager as any).configPath || program.opts().config;
+          process.stderr.write(
+            `配置文件未初始化，请先执行 "code-analyze init" 创建配置：${configPath}\n`,
+          );
+          process.exit(1);
+          return;
+        }
+        throw e;
+      }
       logger.setLevel(program.opts().logLevel as any);
 
       // 合并LLM命令行参数
@@ -94,34 +141,26 @@ program
       };
 
       const analysisService = new AnalysisAppService();
-      
-      // 先尝试执行解析，如果有未提交变更提示用户确认
+
+      // V2.5：在进入解析流程前先做一次 LLM 连接可用性校验
       try {
-        const tempResult = await analysisService.runAnalysis({ ...analysisParams });
-        if (!tempResult.success && tempResult.code === ErrorCode.INCREMENTAL_NOT_AVAILABLE) {
-          if (options.confirm) {
-            const confirmed = await confirm(`${tempResult.message}，是否继续？`, false);
-            if (!confirmed) {
-              logger.info('用户取消操作');
-              process.exit(0);
-            }
-            analysisParams.force = true;
-          }
-        }
-      } catch (e) {
-        // 预检查失败继续
+        const { OpenAIClient } = await import('./infrastructure/llm/openai.client');
+        const client = new OpenAIClient(config.llm);
+        await client.connectTest();
+      } catch (e: any) {
+        logger.error(`LLM 连接/配置校验失败: ${e?.message || String(e)}`);
+        process.exit(1);
+        return;
       }
 
-      // 远程LLM服务风险提示（--no-confirm 会设置 options.confirm=false）
-      if (config.llm.base_url && !config.llm.base_url.includes('localhost') && !config.llm.base_url.includes('127.0.0.1') && options.confirm !== false) {
-        const confirmed = await confirm(`警告：您正在使用远程LLM服务，所有解析的代码文件内容将会上传到${config.llm.base_url}，相关风险由您自行承担，是否继续？`, false);
-        if (!confirmed) {
-          logger.info('用户取消操作');
-          process.exit(0);
-        }
+      // 远程LLM服务风险仅日志告警，不再阻塞交互（设计文档 14.1.2）
+      if (config.llm.base_url && !config.llm.base_url.includes('localhost') && !config.llm.base_url.includes('127.0.0.1')) {
+        logger.warn(
+          `您正在使用远程LLM服务 (${config.llm.base_url})，解析过程中的代码内容将会上传到该服务，相关风险由您自行承担。`,
+        );
       }
 
-      // 启动进度条（全量模式会通过 onTotalKnown 用真实 total 重新 start）
+      // 启动进度条（后续会在真实 total 已知时通过 onTotalKnown 重启）
       logger.info(`开始解析项目：${options.path}`);
       progressBar.start(100, 0, { file: '初始化中...' });
 
@@ -184,6 +223,13 @@ program
       if (result.success) {
         logger.success(`解析完成！共分析 ${result.data?.analyzedFilesCount || 0} 个文件，耗时 ${((result.data?.duration || 0) / 1000).toFixed(2)}s`);
         logger.success(`项目分析结果入口：${result.data?.summaryPath || ''}`);
+        const usage = result.data?.tokenUsage;
+        if (usage) {
+          logger.info(
+            `本次解析共调用 LLM ${usage.totalCalls} 次，输入 Token: ${usage.totalPromptTokens}，` +
+            `输出 Token: ${usage.totalCompletionTokens}，总 Token: ${usage.totalTokens}`
+          );
+        }
       } else {
         logger.error(`解析失败：${result.message}`);
         if (result.errors && result.errors.length > 0) {
@@ -207,7 +253,20 @@ program
   .option('--output-dir <path>', '结果输出目录')
   .action(async (absolutePath: string, options: { project?: string; outputDir?: string }) => {
     try {
-      const config = await configManager.load(program.opts().config);
+      let config;
+      try {
+        config = await configManager.load(program.opts().config);
+      } catch (e: any) {
+        if (e instanceof AppError && e.code === ErrorCode.CONFIG_NOT_INITIALIZED) {
+          const configPath = (configManager as any).configPath || program.opts().config;
+          process.stderr.write(
+            `配置文件未初始化，请先执行 "code-analyze init" 创建配置：${configPath}\n`,
+          );
+          process.exit(1);
+          return;
+        }
+        throw e;
+      }
       logger.setLevel(program.opts().logLevel as any);
       const projectRoot = options.project || process.cwd();
       const outputDir = options.outputDir || config.global.output_dir;
@@ -239,7 +298,20 @@ program
   .option('--reset', '重置所有配置为默认值')
   .action(async (options) => {
     try {
-      const config = await configManager.load(program.opts().config);
+      let config;
+      try {
+        config = await configManager.load(program.opts().config);
+      } catch (e: any) {
+        if (e instanceof AppError && e.code === ErrorCode.CONFIG_NOT_INITIALIZED) {
+          const configPath = (configManager as any).configPath || program.opts().config;
+          process.stderr.write(
+            `配置文件未初始化，请先执行 "code-analyze init" 创建配置：${configPath}\n`,
+          );
+          process.exit(1);
+          return;
+        }
+        throw e;
+      }
       const outputFormat = program.opts().output;
 
       if (options.list) {

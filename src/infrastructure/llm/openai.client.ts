@@ -1,21 +1,86 @@
 import OpenAI from 'openai';
 import { ILLMClient } from '../../domain/interfaces';
 import { LLMConfig, LLMCallOptions, LLMResponse } from '../../common/types';
+import { LLMUsageTracker } from './llm.usage.tracker';
 import { AppError, ErrorCode } from '../../common/errors';
 import { logger } from '../../common/logger';
 
 export class OpenAIClient implements ILLMClient {
   private client: OpenAI;
   private config: LLMConfig;
+  private tracker?: LLMUsageTracker;
 
-  constructor(config: LLMConfig) {
+  constructor(config: LLMConfig, tracker?: LLMUsageTracker) {
     this.config = config;
+    this.tracker = tracker;
     this.client = new OpenAI({
       apiKey: config.api_key,
       baseURL: config.base_url,
       timeout: config.timeout,
       dangerouslyAllowBrowser: true,
     });
+  }
+
+  /**
+   * 连接可用性校验（V2.5）
+   * - 在进入任何解析流程前调用；
+   * - 配置不完整或服务不可用时抛出带有明确 ErrorCode 的 AppError。
+   */
+  async connectTest(): Promise<void> {
+    // 基本配置校验：base_url / api_key / model 不能为空
+    if (!this.config.base_url || !this.config.api_key || !this.config.model) {
+      throw new AppError(
+        ErrorCode.LLM_INVALID_CONFIG,
+        'LLM 配置不完整，请在配置文件或环境变量中设置 base_url/api_key/model',
+        {
+          missing: {
+            base_url: !this.config.base_url,
+            api_key: !this.config.api_key,
+            model: !this.config.model,
+          },
+        },
+      );
+    }
+
+    try {
+      const res = await this.client.chat.completions.create({
+        model: this.config.model,
+        temperature: 0,
+        max_tokens: 1,
+        messages: [{ role: 'system', content: 'health-check' }],
+      } as any);
+
+      const status = (res as any).status ?? 200;
+      if (status === 401) {
+        throw new AppError(ErrorCode.LLM_CALL_FAILED, 'LLM 鉴权失败', { status });
+      }
+      if (status === 404) {
+        throw new AppError(ErrorCode.LLM_CALL_FAILED, 'LLM 模型不存在', { status });
+      }
+      if (status < 200 || status >= 300) {
+        throw new AppError(
+          ErrorCode.LLM_CALL_FAILED,
+          `LLM 连接校验返回异常状态码：${status}`,
+          { status },
+        );
+      }
+    } catch (e: any) {
+      if (e instanceof AppError) {
+        throw e;
+      }
+      const code = e?.code || e?.status;
+      if (code === 'ETIMEDOUT') {
+        throw new AppError(ErrorCode.LLM_TIMEOUT, 'LLM 连接超时', e);
+      }
+      if (code === 'ENOTFOUND' || code === 'ECONNREFUSED' || code === 'ECONNRESET') {
+        throw new AppError(ErrorCode.LLM_CALL_FAILED, '无法连接到 LLM 服务，请检查网络或 base_url', e);
+      }
+      throw new AppError(
+        ErrorCode.LLM_CALL_FAILED,
+        `LLM 连接校验失败：${e?.message || String(e)}`,
+        e,
+      );
+    }
   }
 
   async call(prompt: string, options?: LLMCallOptions): Promise<LLMResponse> {
@@ -31,20 +96,25 @@ export class OpenAIClient implements ILLMClient {
           messages: [
             { role: 'system', content: '你是专业的代码分析专家，严格按照要求输出结构化结果。' },
             { role: 'user', content: prompt }
-          ],
-          response_format: { type: 'json_object' }
+          ]
         });
 
         const content = response.choices[0].message.content || '';
         const usage = response.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
 
+        const normalizedUsage = {
+          promptTokens: usage.prompt_tokens ?? 0,
+          completionTokens: usage.completion_tokens ?? 0,
+          totalTokens: usage.total_tokens ?? 0,
+        };
+
+        if (this.tracker) {
+          this.tracker.addUsage(normalizedUsage);
+        }
+
         return {
           content,
-          usage: {
-            promptTokens: usage.prompt_tokens,
-            completionTokens: usage.completion_tokens,
-            totalTokens: usage.total_tokens,
-          },
+          usage: normalizedUsage,
           model: response.model,
           responseTime: Date.now() - startTime,
         };

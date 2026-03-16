@@ -12,7 +12,7 @@ export class ProgressBar {
     this.current = initialValue;
     
     this.bar = new cliProgress.SingleBar({
-      format: `${pc.blue('解析进度')} |${pc.cyan('{bar}')}| {percentage}% | 已处理: {value}/{total} 文件 | 剩余时间: {eta_formatted} | 当前文件: {file}`,
+      format: `${pc.blue('解析进度')} |${pc.cyan('{bar}')}| {percentage}% | 已处理: {value}/{total} 对象 | 当前对象:\n{file}`,
       barCompleteChar: '\u2588',
       barIncompleteChar: '\u2591',
       hideCursor: true,

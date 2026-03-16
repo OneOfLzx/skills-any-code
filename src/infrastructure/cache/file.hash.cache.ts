@@ -3,16 +3,78 @@ import { FileAnalysis } from '../../common/types';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { createHash } from 'crypto';
+import { logger } from '../../common/logger';
+
+interface FileHashCacheOptions {
+  cacheDir: string;
+  maxSizeMb: number; // 0 表示禁用（V2.5）
+}
 
 export class FileHashCache implements IAnalysisCache {
   private cacheDir: string;
+  private maxSizeMb: number;
 
-  constructor(cacheDir: string) {
-    this.cacheDir = cacheDir;
-    fs.ensureDirSync(cacheDir);
+  constructor(options: FileHashCacheOptions) {
+    this.cacheDir = options.cacheDir;
+    this.maxSizeMb = options.maxSizeMb;
+  }
+
+  private async getDirSize(): Promise<number> {
+    try {
+      const files = await fs.readdir(this.cacheDir);
+      let total = 0;
+      for (const f of files) {
+        const full = path.join(this.cacheDir, f);
+        const stat = await fs.stat(full);
+        if (stat.isFile()) {
+          total += stat.size;
+        }
+      }
+      return total;
+    } catch {
+      return 0;
+    }
+  }
+
+  private async enforceLimit(): Promise<void> {
+    if (this.maxSizeMb <= 0) {
+      return;
+    }
+
+    await fs.ensureDir(this.cacheDir);
+
+    const maxBytes = this.maxSizeMb * 1024 * 1024;
+    let total = await this.getDirSize();
+    if (total <= maxBytes) return;
+
+    const entries = await fs.readdir(this.cacheDir);
+    const fileStats: { filePath: string; mtimeMs: number; size: number }[] = [];
+
+    for (const name of entries) {
+      const filePath = path.join(this.cacheDir, name);
+      const stat = await fs.stat(filePath);
+      if (stat.isFile()) {
+        fileStats.push({ filePath, mtimeMs: stat.mtimeMs, size: stat.size });
+      }
+    }
+
+    fileStats.sort((a, b) => a.mtimeMs - b.mtimeMs);
+
+    for (const f of fileStats) {
+      if (total <= maxBytes) break;
+      try {
+        await fs.remove(f.filePath);
+        total -= f.size;
+      } catch (e) {
+        logger.warn(`删除缓存文件失败: ${f.filePath}`, e);
+      }
+    }
   }
 
   async get(fileHash: string): Promise<FileAnalysis | null> {
+    if (this.maxSizeMb === 0) {
+      return null;
+    }
     const cachePath = path.join(this.cacheDir, `${fileHash}.json`);
     try {
       if (await fs.pathExists(cachePath)) {
@@ -20,18 +82,25 @@ export class FileHashCache implements IAnalysisCache {
         return data as FileAnalysis;
       }
       return null;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
 
   async set(fileHash: string, result: FileAnalysis): Promise<void> {
-    const cachePath = path.join(this.cacheDir, `${fileHash}.json`);
+    if (this.maxSizeMb === 0) {
+      return;
+    }
+
     try {
+      await fs.ensureDir(this.cacheDir);
+      await this.enforceLimit();
+
+      const cachePath = path.join(this.cacheDir, `${fileHash}.json`);
       await fs.writeJSON(cachePath, result, { spaces: 2 });
     } catch (error) {
       // 缓存写入失败不影响主流程
-      console.warn('Failed to write cache:', error);
+      logger.warn('Failed to write cache:', error);
     }
   }
 

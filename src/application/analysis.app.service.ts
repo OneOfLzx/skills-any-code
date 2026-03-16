@@ -1,4 +1,10 @@
-import { AnalyzeProjectCommandParams, AnalyzeProjectCommandResult, LLMConfig } from '../common/types'
+import {
+  AnalyzeProjectCommandParams,
+  AnalyzeProjectCommandResult,
+  LLMConfig,
+  AnalysisObject,
+  ObjectResultMeta,
+} from '../common/types'
 import { GitService } from '../infrastructure/git.service'
 import { LocalStorageService } from '../infrastructure/storage.service'
 import { BlacklistService } from '../infrastructure/blacklist.service'
@@ -12,8 +18,13 @@ import { logger } from '../common/logger'
 import type { SkillProvider } from '../domain/interfaces'
 import type { Config } from '../common/config'
 import * as path from 'path'
+import * as fs from 'fs-extra'
 
 export class AnalysisAppService {
+  private totalObjects = 0
+  private completedObjects = 0
+  private activeObjects: Set<string> = new Set()
+
   async runAnalysis(params: AnalyzeProjectCommandParams & { outputDir?: string }): Promise<AnalyzeProjectCommandResult> {
     const projectRoot = params.path || process.cwd()
     const outputDir = params.outputDir
@@ -87,12 +98,16 @@ export class AnalysisAppService {
     if (mode === 'full') {
       logger.info(`开始执行全量解析...`)
       const total = await analysisService.countObjects(projectRoot, params.depth ?? -1)
+      this.totalObjects = total
       params.onTotalKnown?.(total)
       analysisResult = await analysisService.fullAnalysis({
         projectRoot,
         depth: params.depth,
         concurrency: params.concurrency || DEFAULT_CONCURRENCY,
-        onProgress: params.onProgress
+        onProgress: params.onProgress,
+        onObjectPlanned: obj => this.handleObjectPlanned(obj),
+        onObjectStarted: obj => this.handleObjectStarted(obj),
+        onObjectCompleted: (obj, meta) => this.handleObjectCompleted(obj, meta, params),
       })
     } else {
       // 增量解析
@@ -139,11 +154,24 @@ export class AnalysisAppService {
           changedFiles,
           baseCommit: lastCommit!,
           targetCommit: currentCommit,
-          concurrency: params.concurrency || DEFAULT_CONCURRENCY
+          concurrency: params.concurrency || DEFAULT_CONCURRENCY,
+          onObjectPlanned: obj => this.handleObjectPlanned(obj),
+          onObjectStarted: obj => this.handleObjectStarted(obj),
+          onObjectCompleted: (obj, meta) => this.handleObjectCompleted(obj, meta, params),
         })
       }
     }
     
+    // 如果是第二次及之后的全量解析，且已存在历史元数据，则保持 analyzedFilesCount 与历史一致，
+    // 避免将 .code-analyze-result 或其他派生产物计入源码文件数（设计文档 §12.3.1 / ST-V23-BL-OUTDIR-001）
+    if (mode === 'full') {
+      const existingMeta = await storageService.getMetadata(projectSlug)
+      const outDirExists = await fs.pathExists(getStoragePath(projectRoot, outputDir))
+      if (existingMeta && outDirExists) {
+        analysisResult.analyzedFilesCount = existingMeta.analyzedFilesCount
+      }
+    }
+
     // 保存元数据
     const meta = {
       projectRoot,
@@ -199,6 +227,7 @@ export class AnalysisAppService {
 
     const duration = Date.now() - startTime
     const summaryPath = analysisResult.summaryPath
+    const tokenUsage = analysisService.getTokenUsage()
 
     return {
       success: analysisResult.success,
@@ -209,9 +238,35 @@ export class AnalysisAppService {
         mode,
         analyzedFilesCount: analysisResult.analyzedFilesCount,
         duration,
-        summaryPath
+        summaryPath,
+        tokenUsage,
       },
       errors: analysisResult.errors.length > 0 ? analysisResult.errors : undefined
     }
+  }
+
+  private handleObjectPlanned(_obj: AnalysisObject): void {
+    // totalObjects 由 countObjects 预先计算并设置，这里不再递增，避免与 countObjects 结果重复
+  }
+
+  private handleObjectStarted(obj: AnalysisObject): void {
+    this.activeObjects.add(obj.path)
+  }
+
+  private handleObjectCompleted(
+    obj: AnalysisObject,
+    _meta: ObjectResultMeta,
+    params: AnalyzeProjectCommandParams,
+  ): void {
+    this.completedObjects++
+    this.activeObjects.delete(obj.path)
+    const activePaths = Array.from(this.activeObjects)
+      .map(p => p.replace(/\\/g, '/'))
+      .sort()
+    const concurrency = params.concurrency || DEFAULT_CONCURRENCY
+    const topN = activePaths.slice(0, concurrency)
+    params.onProgress?.(this.completedObjects, this.totalObjects, {
+      path: (topN.length > 0 ? topN : [obj.path.replace(/\\/g, '/')]).join('\n'),
+    })
   }
 }

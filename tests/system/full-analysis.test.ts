@@ -44,6 +44,74 @@ describe('System test: V2.1 LLM原生解析（ST-FULL-* / ST-INC-* 关键场景�
     }
   }, 120000);
 
+  test('ST-V23-BL-OUTDIR-001: 输出目录 .code-analyze-result 不参与解析', async () => {
+    const mock = await startMockOpenAIServer();
+    const testProject = await TestProjectFactory.create('small', false);
+    const projectPath = testProject.path;
+
+    try {
+      const app = new AnalysisAppService();
+
+      const first = await app.runAnalysis({
+        path: projectPath,
+        mode: 'full',
+        force: true,
+        llmConfig: {
+          base_url: mock.baseUrl,
+          api_key: 'test',
+          model: 'mock',
+          temperature: 0.1,
+          max_tokens: 1000,
+          timeout: 1000,
+          max_retries: 0,
+          retry_delay: 1,
+          context_window_size: 1000,
+          cache_enabled: false,
+          cache_dir: path.join(projectPath, '.cache'),
+        },
+      } as any);
+
+      expect(first.success).toBe(true);
+
+      const second = await app.runAnalysis({
+        path: projectPath,
+        mode: 'full',
+        force: true,
+        llmConfig: {
+          base_url: mock.baseUrl,
+          api_key: 'test',
+          model: 'mock',
+          temperature: 0.1,
+          max_tokens: 1000,
+          timeout: 1000,
+          max_retries: 0,
+          retry_delay: 1,
+          context_window_size: 1000,
+          cache_enabled: false,
+          cache_dir: path.join(projectPath, '.cache'),
+        },
+      } as any);
+
+      expect(second.success).toBe(true);
+      expect(second.data?.analyzedFilesCount).toBe(first.data?.analyzedFilesCount);
+
+      const indexPath = path.join(projectPath, '.code-analyze-result', 'analysis-index.json');
+      const indexData = await fs.readJson(indexPath);
+
+      const entries = indexData.entries ?? {};
+      const keys = Object.keys(entries);
+
+      expect(keys.length).toBeGreaterThan(0);
+      for (const k of keys) {
+        expect(k.includes('/.code-analyze-result/')).toBe(false);
+        expect(k.endsWith('/.code-analyze-result')).toBe(false);
+      }
+    } finally {
+      await mock.close();
+      await testProject.cleanup();
+    }
+  }, 180000);
+
   test('ST-INC-004: Git项目存在未提交变更且未force时给出提示', async () => {
     const mock = await startMockOpenAIServer();
     const testProject = await TestProjectFactory.create('small', true);

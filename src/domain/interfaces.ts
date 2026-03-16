@@ -1,6 +1,19 @@
-import {
-  AnalysisResult, FullAnalysisParams, IncrementalAnalysisParams, ResumeAnalysisParams, FileAnalysis, DirectoryAnalysis, AnalysisMetadata, AnalysisCheckpoint, ModificationLog,
-  LLMCallOptions, LLMResponse, FileChunk, FileChunkAnalysis, AnalysisIndex } from '../common/types'
+import type {
+  AnalysisResult,
+  FullAnalysisParams,
+  IncrementalAnalysisParams,
+  ResumeAnalysisParams,
+  FileAnalysis,
+  DirectoryAnalysis,
+  AnalysisMetadata,
+  AnalysisCheckpoint,
+  ModificationLog,
+  LLMCallOptions,
+  LLMResponse,
+  FileChunk,
+  FileChunkAnalysis,
+  AnalysisIndex,
+} from '../common/types'
 
 // ===== V2.3 黑名单服务接口 =====
 export interface IBlacklistService {
@@ -80,6 +93,10 @@ export interface IGitService {
   getProjectSlug(projectRoot: string): Promise<string>
   getUncommittedChanges(projectRoot: string): Promise<string[]>
   diffCommits(projectRoot: string, commit1: string, commit2: string): Promise<string[]>
+  /** 文件级 git commit id（最近一次修改该文件的提交），需求 10.3.2 / 13.8 */
+  getFileLastCommit(projectRoot: string, filePath: string): Promise<string | null>
+  /** 文件是否处于 dirty 状态（存在未提交修改），需求 10.3.2 / 13.8 */
+  isFileDirty(projectRoot: string, filePath: string): Promise<boolean>
 }
 
 // Worker调度服务接口

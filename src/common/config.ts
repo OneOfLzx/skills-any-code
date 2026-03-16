@@ -5,14 +5,18 @@ import os from 'os';
 import { z } from 'zod';
 import { DEFAULT_CONCURRENCY, DEFAULT_OUTPUT_DIR } from './constants';
 import { logger } from './logger';
+import { AppError, ErrorCode } from './errors';
 
-// V2.3：全局黑名单默认值（.gitignore 语法）
+// V2.5：全局黑名单默认值（.gitignore 语法）
 const DEFAULT_BLACKLIST = [
   '*.yml', '*.yaml', '*.ini', '*.cfg', '*.json', '*.toml',
   '*.md', '*.txt', '*.rst',
   'README*', 'LICENSE*', 'CHANGELOG*',
   '*.lock', 'package-lock.json', 'yarn.lock',
   '*.env*', 'credentials.*', '*.pem', '*.key',
+  // 图片与图标等常见二进制资源（需求文档 13.3 / 测试文档 16.6）
+  '*.png', '*.jpg', '*.jpeg', '*.gif',
+  '*.bmp', '*.svg', '*.webp', '*.ico',
   'docs/', 'dist/', 'build/', 'coverage/',
   'node_modules/', '.git/', '.code-analyze-result/',
 ];
@@ -36,9 +40,10 @@ const ConfigSchema = z.object({
     default_providers: z.array(z.string()).default(DEFAULT_PROVIDERS),
   }).default({}),
   llm: z.object({
-    base_url: z.string().default('https://ark.cn-beijing.volces.com/api/v3'),
+    // V2.5：默认配置中不再内置具体远程服务与模型，避免误上传代码（需求文档 13.4.1）
+    base_url: z.string().default(''),
     api_key: z.string().default(''),
-    model: z.string().default('doubao-seed-1-6-251015-251015'),
+    model: z.string().default(''),
     temperature: z.number().min(0).max(2).default(0.1),
     max_tokens: z.number().int().min(100).default(4000),
     timeout: z.number().int().min(1000).default(60000),
@@ -47,6 +52,8 @@ const ConfigSchema = z.object({
     context_window_size: z.number().int().min(1000).default(128000),
     cache_enabled: z.boolean().default(true),
     cache_dir: z.string().default('~/.cache/code-analyze/llm'),
+    // V2.5：新增缓存容量上限（MB），0 表示禁用磁盘缓存（需求文档 13.5.2）
+    cache_max_size_mb: z.number().int().min(0).default(500),
   }).default({}),
 });
 
@@ -69,13 +76,21 @@ class ConfigManager {
     return pathStr;
   }
 
+  /**
+   * 加载配置文件。
+   *
+   * V2.5 起，当目标配置文件不存在时：
+   * - 不再自动创建磁盘文件（由 init 子命令负责）；
+   * - 抛出带有 ErrorCode.CONFIG_NOT_INITIALIZED 的 AppError，表示「配置未初始化」，
+   *   由 CLI 层捕获并提示用户先执行 init（测试文档 16.3 / 16.1.1）。
+   */
   async load(customPath?: string): Promise<Config> {
     this.configPath = customPath ? this.expandTilde(customPath) : this.getDefaultConfigPath();
-    
-    // 1. 加载默认配置
+
+    // 1. 加载默认配置（作为解析/校验基线）
     let config = ConfigSchema.parse({});
 
-    // 2. 加载配置文件
+    // 2. 加载配置文件；不存在时交由上层处理「未初始化」状态
     if (await fs.pathExists(this.configPath)) {
       try {
         const fileContent = await fs.readFile(this.configPath, 'utf-8');
@@ -92,14 +107,13 @@ class ConfigManager {
         logger.warn(`配置文件解析失败，使用默认配置：${(error as Error).message}`);
       }
     } else {
-      // 配置文件不存在，自动生成默认配置文件
-      try {
-        await fs.ensureDir(path.dirname(this.configPath));
-        await fs.writeFile(this.configPath, yaml.dump(config), 'utf-8');
-        logger.debug(`已自动生成默认配置文件：${this.configPath}`);
-      } catch (error) {
-        logger.warn(`自动生成配置文件失败：${(error as Error).message}`);
-      }
+      // 配置文件不存在：不再隐式创建，由 CLI 的 init 子命令负责初始化
+      const defaultConfig = ConfigSchema.parse({});
+      this.config = defaultConfig;
+      throw new AppError(
+        ErrorCode.CONFIG_NOT_INITIALIZED,
+        `配置文件未初始化：${this.configPath}`,
+      );
     }
 
     // 3. 加载环境变量
@@ -149,6 +163,22 @@ class ConfigManager {
       throw new Error('配置未加载，请先调用 load() 方法');
     }
     return this.config;
+  }
+
+  /**
+   * 显式初始化配置文件内容。
+   *
+   * - 当目标文件不存在时：创建目录并写入默认配置；
+   * - 当目标文件已存在时：直接覆盖为默认配置（是否覆盖由上层 CLI 交互确认）。
+   */
+  async init(customPath?: string): Promise<void> {
+    this.configPath = customPath ? this.expandTilde(customPath) : this.getDefaultConfigPath();
+    const defaultConfig = ConfigSchema.parse({});
+
+    await fs.ensureDir(path.dirname(this.configPath));
+    await fs.writeFile(this.configPath, yaml.dump(defaultConfig), 'utf-8');
+    this.config = defaultConfig;
+    logger.debug(`配置文件已初始化：${this.configPath}`);
   }
 
   async save(config: Partial<Config>): Promise<void> {

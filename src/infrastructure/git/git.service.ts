@@ -87,4 +87,34 @@ export class GitService implements IGitService {
       throw new AppError(ErrorCode.GIT_OPERATION_FAILED, 'Failed to diff commits', (e as Error).message)
     }
   }
+
+  async getFileLastCommit(projectRoot: string, filePath: string): Promise<string | null> {
+    try {
+      const git = this.getGitInstance(projectRoot)
+      const result = await git.raw(['log', '-n', '1', '--pretty=format:%H', '--', filePath])
+      const hash = result.trim()
+      return hash || null
+    } catch {
+      // 对于未纳入 Git 管理或无提交记录的文件，返回 null
+      return null
+    }
+  }
+
+  async isFileDirty(projectRoot: string, filePath: string): Promise<boolean> {
+    try {
+      const git = this.getGitInstance(projectRoot)
+      const status = await git.status()
+      const normalizedPath = filePath.replace(/\\/g, '/')
+
+      if (status.modified.includes(normalizedPath)) return true
+      if (status.created.includes(normalizedPath)) return true
+      if (status.deleted.includes(normalizedPath)) return true
+      if (status.renamed.some(r => r.to === normalizedPath || r.from === normalizedPath)) return true
+
+      return false
+    } catch {
+      // Git 不可用时视为非 dirty，交由上层逻辑处理
+      return false
+    }
+  }
 }

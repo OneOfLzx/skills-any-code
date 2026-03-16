@@ -20,6 +20,19 @@ export interface FileAnalysis {
   language: string
   linesOfCode: number
   dependencies: string[]
+  /**
+   * 文件级 git commit id（最近一次修改该文件的提交），对应设计文档 10.3.2 / 13.2.1
+   * git 不可用或文件未提交时可为空
+   */
+  fileGitCommitId?: string
+  /**
+   * 解析时文件是否处于未提交（dirty）状态，对应设计文档 10.3.2 / 13.2.1
+   */
+  isDirtyWhenAnalyzed?: boolean
+  /**
+   * 解析时文件内容哈希，用于增量与缓存决策，对应设计文档 10.3.2 / 13.2.1
+   */
+  fileHashWhenAnalyzed?: string
   /** 文件功能描述（200字以内），由 LLM 第二步调用生成 */
   description?: string
   summary: string
@@ -45,8 +58,6 @@ export interface FileAnalysis {
     signature: string
     description: string
   }>
-  classDiagram: string
-  sequenceDiagram: string
   lastAnalyzedAt: string
   commitHash: string
 }
@@ -56,14 +67,19 @@ export interface DirectoryAnalysis {
   type: 'directory'
   path: string
   name: string
+  /** 目录功能描述（200 字以内） */
+  description: string
+  /** 目录概述（100 字以内） */
   summary: string
+  /** 直接子目录数量 */
+  childrenDirsCount: number
+  /** 直接子文件数量（仅解析范围内的文本代码文件） */
+  childrenFilesCount: number
   structure: Array<{
     name: string
     type: 'file' | 'directory'
     description: string
   }>
-  dependencies: string[]
-  moduleDiagram: string
   lastAnalyzedAt: string
   commitHash: string
 }
@@ -132,7 +148,17 @@ export interface ResolveConfig {
   indexFilePath: string
 }
 
-// 进度回调：每完成一个对象（文件/目录）时调用
+export interface AnalysisObject {
+  type: 'file' | 'directory'
+  path: string
+}
+
+export interface ObjectResultMeta {
+  status: 'parsed' | 'cached' | 'filtered' | 'skipped' | 'failed'
+  reason?: string
+}
+
+// 进度回调：每完成一个对象（文件/目录）时调用（兼容旧接口）
 export type ProgressCallback = (done: number, total: number, current?: { path: string }) => void
 
 // 分析服务参数
@@ -142,6 +168,10 @@ export interface FullAnalysisParams {
   concurrency: number
   /** 可选：每完成一个文件/目录时回调，用于进度条等 */
   onProgress?: ProgressCallback
+  /** V2.4：对象级生命周期回调 */
+  onObjectPlanned?: (obj: AnalysisObject) => void
+  onObjectStarted?: (obj: AnalysisObject) => void
+  onObjectCompleted?: (obj: AnalysisObject, meta: ObjectResultMeta) => void
 }
 
 export interface IncrementalAnalysisParams {
@@ -150,6 +180,10 @@ export interface IncrementalAnalysisParams {
   targetCommit: string
   changedFiles: string[]
   concurrency: number
+  /** V2.4：对象级生命周期回调 */
+  onObjectPlanned?: (obj: AnalysisObject) => void
+  onObjectStarted?: (obj: AnalysisObject) => void
+  onObjectCompleted?: (obj: AnalysisObject, meta: ObjectResultMeta) => void
 }
 
 export interface ResumeAnalysisParams {
@@ -203,6 +237,7 @@ export interface AnalyzeProjectCommandResult {
     analyzedFilesCount: number
     duration: number
     summaryPath: string
+    tokenUsage?: TokenUsageStats
   }
   errors?: Array<{
     path: string
@@ -231,6 +266,13 @@ export interface LLMResponse {
   responseTime: number;
 }
 
+export interface TokenUsageStats {
+  totalPromptTokens: number
+  totalCompletionTokens: number
+  totalTokens: number
+  totalCalls: number
+}
+
 // 文件分片
 export interface FileChunk {
   id: number;
@@ -243,12 +285,6 @@ export interface FileChunk {
 // 分片解析结果
 export interface FileChunkAnalysis {
   chunkId: number;
-  basicInfo: Partial<{
-    name: string;
-    language: string;
-    linesOfCode: number;
-    dependencies: string[];
-  }>;
   classes: Array<{
     name: string;
     extends?: string;
@@ -271,11 +307,6 @@ export interface FileChunkAnalysis {
     signature: string;
     description: string;
   }>;
-  partialDiagrams: {
-    classDiagram?: string;
-    sequenceDiagram?: string;
-  };
-  summary: string;
 }
 
 // LLM配置
@@ -292,6 +323,8 @@ export interface LLMConfig {
   context_window_size: number;
   cache_enabled: boolean;
   cache_dir: string;
+  // V2.5：缓存容量上限（MB），0 表示禁用磁盘缓存
+  cache_max_size_mb: number;
 }
 
 // 扩展CLI配置（与 Config 对齐，供类型引用）

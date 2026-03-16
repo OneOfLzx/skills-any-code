@@ -95,4 +95,27 @@ export class GitService implements IGitService {
       throw new AppError(ErrorCode.GIT_OPERATION_FAILED, '比较commit差异失败', e)
     }
   }
+
+  async getFileLastCommit(projectRoot: string, filePath: string): Promise<string | null> {
+    try {
+      const git = this.getGit()
+      const relPath = filePath
+      const log = await git.raw(['log', '-n', '1', '--pretty=format:%H', '--', relPath])
+      const trimmed = (log || '').trim()
+      return trimmed || null
+    } catch {
+      return null
+    }
+  }
+
+  async isFileDirty(projectRoot: string, filePath: string): Promise<boolean> {
+    try {
+      const git = this.getGit()
+      const status = await git.status()
+      return status.files.some(f => f.path === filePath)
+    } catch {
+      // git 不可用时视为非 dirty，交由上层按非 git 场景处理
+      return false
+    }
+  }
 }
