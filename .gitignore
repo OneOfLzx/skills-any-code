@@ -1,0 +1,9 @@
+tests/.temp-tests/*
+tests/coverage/*
+tests/.cache/*
+dist/*
+node_modules/*
+*/.code-analyze-result/*
+.code-analyze-result/*
+~/*
+bugs/*

@@ -1,0 +1,73 @@
+import { configManager } from '../../src/common/config';
+import fs from 'fs-extra';
+import path from 'path';
+import os from 'os';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
+
+describe('Config Path Integration Test (INT-CFG-*)', () => {
+  const originalCwd = process.cwd();
+  const originalHome = process.env.HOME;
+  const originalUserProfile = process.env.USERPROFILE;
+  const tempHome = path.join(os.tmpdir(), 'code-analyze-test-int-config');
+  let tempProjectDir: string;
+  
+  beforeEach(async () => {
+    delete process.env.HOME;
+    delete process.env.USERPROFILE;
+    process.env.HOME = tempHome;
+    process.env.USERPROFILE = tempHome;
+    
+    await fs.remove(tempHome);
+    await fs.ensureDir(tempHome);
+    
+    tempProjectDir = await fs.mkdtemp(path.join(os.tmpdir(), 'code-analyze-test-project-'));
+    await fs.writeFile(path.join(tempProjectDir, 'index.ts'), 'console.log("test");');
+    
+    (configManager as any).config = null;
+    (configManager as any).configPath = '';
+  });
+  
+  afterEach(async () => {
+    process.env.HOME = originalHome;
+    process.env.USERPROFILE = originalUserProfile;
+    process.chdir(originalCwd);
+    
+    await fs.remove(tempHome);
+    await fs.remove(tempProjectDir);
+  });
+  
+  test('INT-CFG-001: 配置文件自动生成在用户目录而非项目目录', async () => {
+    process.chdir(tempProjectDir);
+    
+    await configManager.load();
+    
+    const expectedConfigPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const projectConfigPath = path.join(tempProjectDir, '~', '.code-analyze', 'config.yaml');
+    
+    const homeConfigExists = await fs.pathExists(expectedConfigPath);
+    expect(homeConfigExists).toBe(true);
+    
+    const projectConfigExists = await fs.pathExists(projectConfigPath);
+    expect(projectConfigExists).toBe(false);
+  });
+  
+  test('INT-CFG-002: CLI默认配置路径正确解析', async () => {
+    process.chdir(tempProjectDir);
+    
+    const cliPath = path.join(__dirname, '../../dist/cli.js');
+    await execAsync(`node ${cliPath} config --list`, {
+      env: {
+        ...process.env,
+        HOME: tempHome,
+        USERPROFILE: tempHome
+      }
+    });
+    
+    const expectedConfigPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const homeConfigExists = await fs.pathExists(expectedConfigPath);
+    expect(homeConfigExists).toBe(true);
+  });
+});
