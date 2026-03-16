@@ -33,6 +33,10 @@ export function getStoragePath(projectRoot: string, customOutputDir?: string): s
 
 export function getFileOutputPath(storageRoot: string, filePath: string): string {
   const parsed = path.parse(filePath)
+  // 特殊处理 index.xxx：为避免与目录级 index.md 冲突，文件结果命名为 index.xxx.md
+  if (parsed.name === 'index' && parsed.ext) {
+    return path.join(storageRoot, parsed.dir, `index${parsed.ext}.md`)
+  }
   return path.join(storageRoot, parsed.dir, `${parsed.name}.md`)
 }
 
