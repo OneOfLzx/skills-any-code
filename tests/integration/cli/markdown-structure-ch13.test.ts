@@ -9,7 +9,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as os from 'os';
 import { startMockOpenAIServer } from '../../utils/mock-openai-server';
-import { createTestConfig } from '../../utils/test-config-helper';
+import { createTestConfigInDir } from '../../utils/test-config-helper';
 
 const execAsync = promisify(exec);
 
@@ -29,10 +29,11 @@ function isDescriptionStatOnly(description: string): boolean {
 
 describe('13.3 目录级 Markdown 功能描述 (ST-DIR-MD-CONTENT-001)', () => {
   let testDir: string;
-  let configPath: string;
-  let configTempDir: string;
+  let tempHome: string;
   let mock: { baseUrl: string; close: () => Promise<void> };
   const repoRoot = path.join(__dirname, '../../..');
+  const originalHome = process.env.HOME;
+  const originalUserProfile = process.env.USERPROFILE;
 
   beforeAll(async () => {
     await execAsync('npm run build', { cwd: repoRoot });
@@ -41,15 +42,19 @@ describe('13.3 目录级 Markdown 功能描述 (ST-DIR-MD-CONTENT-001)', () => {
   beforeEach(async () => {
     testDir = mkdtemp('code-analyze-dir-md');
     mock = await startMockOpenAIServer();
-    const cfg = await createTestConfig({ llmBaseUrl: mock.baseUrl, llmApiKey: 'test', llmModel: 'mock' });
-    configPath = cfg.configPath;
-    configTempDir = cfg.tempDir;
+    tempHome = mkdtemp('ca-dir-md-home');
+    await fs.ensureDir(tempHome);
+    await createTestConfigInDir(tempHome, { llmBaseUrl: mock.baseUrl, llmApiKey: 'test', llmModel: 'mock' });
+    process.env.HOME = tempHome;
+    process.env.USERPROFILE = tempHome;
   });
 
   afterEach(async () => {
     if (mock) await mock.close();
     await fs.remove(testDir).catch(() => {});
-    await fs.remove(configTempDir).catch(() => {});
+    process.env.HOME = originalHome;
+    process.env.USERPROFILE = originalUserProfile;
+    await fs.remove(tempHome).catch(() => {});
   });
 
   /**
@@ -72,8 +77,8 @@ describe('13.3 目录级 Markdown 功能描述 (ST-DIR-MD-CONTENT-001)', () => {
     );
 
     await execAsync(
-      `node dist/cli.js analyze --path "${testDir}" --mode full --force --no-skills -c "${configPath}" --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
-      { cwd: repoRoot }
+      `node dist/cli.js --path "${testDir}" --mode full --no-skills --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0`,
+      { cwd: repoRoot, env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome } }
     );
 
     const resultRoot = path.join(testDir, '.code-analyze-result');
@@ -97,10 +102,11 @@ describe('13.3 目录级 Markdown 功能描述 (ST-DIR-MD-CONTENT-001)', () => {
 
 describe('13.4 文件/目录命名冲突 (ST-PATH-CONFLICT-INDEX-001)', () => {
   let testDir: string;
-  let configPath: string;
-  let configTempDir: string;
+  let tempHome: string;
   let mock: { baseUrl: string; close: () => Promise<void> };
   const repoRoot = path.join(__dirname, '../../..');
+  const originalHome = process.env.HOME;
+  const originalUserProfile = process.env.USERPROFILE;
 
   beforeAll(async () => {
     await execAsync('npm run build', { cwd: repoRoot });
@@ -109,15 +115,19 @@ describe('13.4 文件/目录命名冲突 (ST-PATH-CONFLICT-INDEX-001)', () => {
   beforeEach(async () => {
     testDir = mkdtemp('code-analyze-index-conflict');
     mock = await startMockOpenAIServer();
-    const cfg = await createTestConfig({ llmBaseUrl: mock.baseUrl, llmApiKey: 'test', llmModel: 'mock' });
-    configPath = cfg.configPath;
-    configTempDir = cfg.tempDir;
+    tempHome = mkdtemp('ca-index-conflict-home');
+    await fs.ensureDir(tempHome);
+    await createTestConfigInDir(tempHome, { llmBaseUrl: mock.baseUrl, llmApiKey: 'test', llmModel: 'mock' });
+    process.env.HOME = tempHome;
+    process.env.USERPROFILE = tempHome;
   });
 
   afterEach(async () => {
     if (mock) await mock.close();
     await fs.remove(testDir).catch(() => {});
-    await fs.remove(configTempDir).catch(() => {});
+    process.env.HOME = originalHome;
+    process.env.USERPROFILE = originalUserProfile;
+    await fs.remove(tempHome).catch(() => {});
   });
 
   /**
@@ -133,8 +143,8 @@ describe('13.4 文件/目录命名冲突 (ST-PATH-CONFLICT-INDEX-001)', () => {
     await fs.writeFile(path.join(coreDir, 'index.py'), '# core index\nclass Core: pass', 'utf-8');
 
     await execAsync(
-      `node dist/cli.js analyze --path "${testDir}" --mode full --force --no-skills -c "${configPath}" --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
-      { cwd: repoRoot }
+      `node dist/cli.js --path "${testDir}" --mode full --no-skills --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0`,
+      { cwd: repoRoot, env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome } }
     );
 
     const resultRoot = path.join(testDir, '.code-analyze-result');

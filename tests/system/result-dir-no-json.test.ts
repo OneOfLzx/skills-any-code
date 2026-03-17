@@ -2,10 +2,11 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
 import * as fs from 'fs-extra';
+import * as os from 'os';
 import { TestProjectFactory } from '../utils/test-project-factory';
 import { startMockOpenAIServer } from '../utils/mock-openai-server';
 import { listAllFilesRecursively } from '../utils/result-dir-whitelist';
-import { createTestConfig } from '../utils/test-config-helper';
+import { createTestConfigInDir } from '../utils/test-config-helper';
 
 const execFileAsync = promisify(execFile);
 
@@ -55,7 +56,8 @@ describe('System: 结果目录不应出现多余 JSON（仅 md）', () => {
       const testProject = await TestProjectFactory.create('small', false);
       const projectPath = testProject.path;
       const outputDir = '.result-no-perfile-json-system';
-      const { configPath, tempDir } = await createTestConfig({
+      const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), 'ca-result-no-json-home-'));
+      await createTestConfigInDir(tempHome, {
         llmBaseUrl: mock.baseUrl,
         llmApiKey: 'test',
         llmModel: 'mock',
@@ -73,16 +75,16 @@ describe('System: 结果目录不应出现多余 JSON（仅 md）', () => {
           ...process.env,
           TERM: 'dumb',
           FORCE_COLOR: '0',
+          HOME: tempHome,
+          USERPROFILE: tempHome,
         };
 
         const { code, stderr } = await runCli(
           [
-            'analyze',
             '--path',
             projectPath,
             '--mode',
             'full',
-            '--force',
             '--no-skills',
             '--output-dir',
             outputDir,
@@ -92,9 +94,6 @@ describe('System: 结果目录不应出现多余 JSON（仅 md）', () => {
             'test',
             '--llm-max-retries',
             '0',
-            '-c',
-            configPath,
-            '--no-confirm',
           ],
           { cwd: repoRoot, env, timeoutMs: 240000 },
         );
@@ -115,7 +114,7 @@ describe('System: 结果目录不应出现多余 JSON（仅 md）', () => {
         // 正向断言：至少产出 1 个 md，避免“没写结果也通过”
         expect(files.some((p) => p.toLowerCase().endsWith('.md'))).toBe(true);
       } finally {
-        await fs.remove(tempDir).catch(() => {});
+        await fs.remove(tempHome).catch(() => {});
         await mock.close();
         await testProject.cleanup();
       }
@@ -130,7 +129,8 @@ describe('System: 结果目录不应出现多余 JSON（仅 md）', () => {
       const testProject = await TestProjectFactory.create('small', false);
       const projectPath = testProject.path;
       const outputDir = '.result-strict-only-md-system';
-      const { configPath, tempDir } = await createTestConfig({
+      const tempHome = await fs.mkdtemp(path.join(os.tmpdir(), 'ca-result-no-json-home-'));
+      await createTestConfigInDir(tempHome, {
         llmBaseUrl: mock.baseUrl,
         llmApiKey: 'test',
         llmModel: 'mock',
@@ -148,16 +148,16 @@ describe('System: 结果目录不应出现多余 JSON（仅 md）', () => {
           ...process.env,
           TERM: 'dumb',
           FORCE_COLOR: '0',
+          HOME: tempHome,
+          USERPROFILE: tempHome,
         };
 
         const { code, stderr } = await runCli(
           [
-            'analyze',
             '--path',
             projectPath,
             '--mode',
             'full',
-            '--force',
             '--no-skills',
             '--output-dir',
             outputDir,
@@ -167,9 +167,6 @@ describe('System: 结果目录不应出现多余 JSON（仅 md）', () => {
             'test',
             '--llm-max-retries',
             '0',
-            '-c',
-            configPath,
-            '--no-confirm',
           ],
           { cwd: repoRoot, env, timeoutMs: 240000 },
         );
@@ -184,7 +181,7 @@ describe('System: 结果目录不应出现多余 JSON（仅 md）', () => {
         // 严格：不允许任何 .json
         expect(jsons).toEqual([]);
       } finally {
-        await fs.remove(tempDir).catch(() => {});
+        await fs.remove(tempHome).catch(() => {});
         await mock.close();
         await testProject.cleanup();
       }

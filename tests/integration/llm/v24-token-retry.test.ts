@@ -4,7 +4,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as os from 'os';
 import { startMockOpenAIServer } from '../../utils/mock-openai-server';
-import { createTestConfig } from '../../utils/test-config-helper';
+import { createTestConfigInDir } from '../../utils/test-config-helper';
 
 const execAsync = promisify(exec);
 
@@ -70,7 +70,7 @@ describe('ST-V24-TOK-004: LLM 重试场景下 Token 统计合理性', () => {
       const projectDir = await fs.mkdtemp(
         path.join(os.tmpdir(), 'code-analyze-tok-retry-'),
       );
-      let configTempDir: string | undefined;
+      let tempHome: string | undefined;
       try {
         await fs.writeFile(
           path.join(projectDir, 'index.ts'),
@@ -78,20 +78,20 @@ describe('ST-V24-TOK-004: LLM 重试场景下 Token 统计合理性', () => {
           'utf-8',
         );
 
-        const { configPath, tempDir } = await createTestConfig({
+        tempHome = await fs.mkdtemp(path.join(os.tmpdir(), 'ca-tok-retry-home-'));
+        await createTestConfigInDir(tempHome, {
           llmBaseUrl: mock.baseUrl,
           llmApiKey: 'test',
           llmModel: 'mock',
         });
-        configTempDir = tempDir;
 
         // 3. 运行一次 full 解析，开启重试（--llm-max-retries=1）
         let combined = '';
         let execCode = 0;
         try {
           const { stdout, stderr } = await execAsync(
-            `node dist/cli.js analyze --path "${projectDir.replace(/\\/g, '/')}" --mode full --force --no-skills -c "${configPath.replace(/\\/g, '/')}" --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 1 --no-confirm`,
-            { cwd: repoRoot, timeout: 120000 },
+            `node dist/cli.js --path "${projectDir.replace(/\\/g, '/')}" --mode full --no-skills --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 1`,
+            { cwd: repoRoot, timeout: 120000, env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome } },
           );
           combined = (stdout ?? '') + (stderr ?? '');
         } catch (e: any) {
@@ -129,7 +129,7 @@ describe('ST-V24-TOK-004: LLM 重试场景下 Token 统计合理性', () => {
         }
       } finally {
         await fs.remove(projectDir).catch(() => {});
-        if (configTempDir) await fs.remove(configTempDir).catch(() => {});
+        if (tempHome) await fs.remove(tempHome).catch(() => {});
       }
     },
     240000,

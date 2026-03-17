@@ -2,10 +2,11 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import * as os from 'os';
 
 import { startMockOpenAIServer } from '../utils/mock-openai-server';
 import { TestProjectFactory } from '../utils/test-project-factory';
-import { createTestConfig } from '../utils/test-config-helper';
+import { createTestConfigInDir } from '../utils/test-config-helper';
 
 const execFileAsync = promisify(execFile);
 
@@ -86,27 +87,27 @@ describe('CLI 进度条首帧 total 非魔法数字回归 (E2E-CLI-PROG-INIT-*)'
       const project = await TestProjectFactory.create('small', false);
       const expectedTotal = await countObjectsForProject(project.path);
       let mock: { baseUrl: string; close: () => Promise<void> } | null = null;
-      let configTempDir = '';
+      let tempHome = '';
 
       try {
         mock = await startMockOpenAIServer();
-        const { configPath, tempDir } = await createTestConfig({
+        tempHome = path.join(os.tmpdir(), `ca-prog-init-home-${Date.now()}`);
+        await fs.ensureDir(tempHome);
+        await createTestConfigInDir(tempHome, {
           llmBaseUrl: mock.baseUrl,
           llmApiKey: 'test',
           llmModel: 'mock',
           cacheEnabled: false,
           cacheMaxSizeMb: 0,
         });
-        configTempDir = tempDir;
+        const env = { ...process.env, HOME: tempHome, USERPROFILE: tempHome };
 
         const { code, stdout, stderr } = await runCli(
           [
-            'analyze',
             '--path',
             project.path,
             '--mode',
             'full',
-            '--force',
             '--no-skills',
             '--llm-base-url',
             mock.baseUrl,
@@ -114,11 +115,8 @@ describe('CLI 进度条首帧 total 非魔法数字回归 (E2E-CLI-PROG-INIT-*)'
             'test',
             '--llm-max-retries',
             '0',
-            '-c',
-            configPath,
-            '--no-confirm',
           ],
-          { cwd: repoRoot, timeoutMs: 240000 },
+          { cwd: repoRoot, timeoutMs: 240000, env },
         );
 
         const combined = stripAnsi((stdout ?? '') + (stderr ?? '')).replace(/\r/g, '\n');
@@ -141,9 +139,7 @@ describe('CLI 进度条首帧 total 非魔法数字回归 (E2E-CLI-PROG-INIT-*)'
         if (mock) {
           await mock.close();
         }
-        if (configTempDir) {
-          await fs.remove(configTempDir).catch(() => {});
-        }
+        if (tempHome) await fs.remove(tempHome).catch(() => {});
         await project.cleanup();
       }
     },
@@ -155,27 +151,27 @@ describe('CLI 进度条首帧 total 非魔法数字回归 (E2E-CLI-PROG-INIT-*)'
     async () => {
       const project = await TestProjectFactory.create('small', false);
       let mock: { baseUrl: string; close: () => Promise<void> } | null = null;
-      let configTempDir = '';
+      let tempHome = '';
 
       try {
         mock = await startMockOpenAIServer();
-        const { configPath, tempDir } = await createTestConfig({
+        tempHome = path.join(os.tmpdir(), `ca-prog-init-home-${Date.now()}`);
+        await fs.ensureDir(tempHome);
+        await createTestConfigInDir(tempHome, {
           llmBaseUrl: mock.baseUrl,
           llmApiKey: 'test',
           llmModel: 'mock',
           cacheEnabled: false,
           cacheMaxSizeMb: 0,
         });
-        configTempDir = tempDir;
+        const env = { ...process.env, HOME: tempHome, USERPROFILE: tempHome };
 
         const { code, stdout, stderr } = await runCli(
           [
-            'analyze',
             '--path',
             project.path,
             '--mode',
             'full',
-            '--force',
             '--no-skills',
             '--llm-base-url',
             mock.baseUrl,
@@ -183,11 +179,8 @@ describe('CLI 进度条首帧 total 非魔法数字回归 (E2E-CLI-PROG-INIT-*)'
             'test',
             '--llm-max-retries',
             '0',
-            '-c',
-            configPath,
-            '--no-confirm',
           ],
-          { cwd: repoRoot, timeoutMs: 240000 },
+          { cwd: repoRoot, timeoutMs: 240000, env },
         );
 
         const combined = stripAnsi((stdout ?? '') + (stderr ?? '')).replace(/\r/g, '\n');
@@ -198,9 +191,7 @@ describe('CLI 进度条首帧 total 非魔法数字回归 (E2E-CLI-PROG-INIT-*)'
         if (mock) {
           await mock.close();
         }
-        if (configTempDir) {
-          await fs.remove(configTempDir).catch(() => {});
-        }
+        if (tempHome) await fs.remove(tempHome).catch(() => {});
         await project.cleanup();
       }
     },

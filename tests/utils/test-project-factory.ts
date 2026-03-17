@@ -302,5 +302,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await TestProjectFactory.cleanupAll();
+  // 注意：Jest 默认并行运行测试文件。若在此处全局清理，会导致其它测试文件中仍在使用的
+  // 临时项目目录被提前删除，从而产生 ENOENT / "not in a git directory" 等偶发失败。
+  // 各用例应通过返回的 project.cleanup() 自行清理；需要全局清理时可在 CI 收尾阶段执行。
 });

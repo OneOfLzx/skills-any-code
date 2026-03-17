@@ -84,7 +84,6 @@ describe('Module interaction integration test（V2.1）', () => {
           model: 'mock',
           temperature: 0.1,
           max_tokens: 1000,
-          max_total_tokens: 200_000,
           timeout: 1000,
           max_retries: 0,
           retry_delay: 1,

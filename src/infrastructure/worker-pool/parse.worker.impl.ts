@@ -26,7 +26,7 @@ export async function parseFile(
   }
 
   // 初始化LLM相关服务
-  const tracker = new LLMUsageTracker(undefined, 0)
+  const tracker = new LLMUsageTracker()
   const llmClient = new OpenAIClient(llmConfig, tracker)
   const fileSplitter = new CodeSplitter(llmClient)
   const cache = new FileHashCache({
@@ -68,7 +68,7 @@ export async function aggregateDirectory(
   }
 
   // 初始化LLM相关服务（worker 内做本任务 token 统计，返回给主线程聚合）
-  const tracker = new LLMUsageTracker(undefined, 0)
+  const tracker = new LLMUsageTracker()
   const llmClient = new OpenAIClient(llmConfig, tracker)
   const fileSplitter = new CodeSplitter(llmClient)
   const cache = new FileHashCache({

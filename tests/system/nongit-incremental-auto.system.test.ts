@@ -182,6 +182,8 @@ describe('系统集成：非Git项目增量解析（ST-INC-NONGIT-*）', () => {
 
         // 在 Git 项目中制造未提交变更；mode=auto + force=true 应走增量并处理该文件
         const newContent = `// ST-INC-NONGIT-003\nexport const changed = ${Date.now()};\n`;
+        // Windows 下偶发目录句柄/文件系统同步抖动，先确保目标目录存在再写入
+        await fs.ensureDir(path.dirname(targetAbs));
         await fs.writeFile(targetAbs, newContent, 'utf-8');
         const expectedHash2 = sha256(newContent);
 

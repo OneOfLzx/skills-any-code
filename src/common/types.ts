@@ -179,6 +179,8 @@ export interface FullAnalysisParams {
   onObjectPlanned?: (obj: AnalysisObject) => void
   onObjectStarted?: (obj: AnalysisObject) => void
   onObjectCompleted?: (obj: AnalysisObject, meta: ObjectResultMeta) => void
+  /** V2.6：扫描阶段进度回调，统计“将被解析的对象数（文件+目录）”，用于 CLI 单行实时展示 */
+  onScanProgress?: (scannedFiles: number) => void
 }
 
 export interface IncrementalAnalysisParams {
@@ -186,11 +188,17 @@ export interface IncrementalAnalysisParams {
   baseCommit: string
   targetCommit: string
   changedFiles: string[]
+  /**
+   * V2.6：增量自修复 - 需要重新聚合的目录列表（例如目录结果缺失但文件未变更）
+   */
+  changedDirs?: string[]
   concurrency: number
   /** V2.4：对象级生命周期回调 */
   onObjectPlanned?: (obj: AnalysisObject) => void
   onObjectStarted?: (obj: AnalysisObject) => void
   onObjectCompleted?: (obj: AnalysisObject, meta: ObjectResultMeta) => void
+  /** 扫描阶段进度回调，用于 CLI 单行实时展示增量待处理对象数（文件+目录） */
+  onScanProgress?: (scannedObjects: number) => void
 }
 
 export interface ResumeAnalysisParams {
@@ -219,7 +227,6 @@ export interface AnalyzeProjectCommandParams {
   mode?: 'full' | 'incremental' | 'auto'
   depth?: number
   concurrency?: number
-  force?: boolean
   llmConfig?: LLMConfig
   /** V2.3：Skill 部署的 Provider 列表 */
   skillsProviders?: string[]
@@ -233,6 +240,8 @@ export interface AnalyzeProjectCommandParams {
   onProgress?: ProgressCallback
   /** Token 使用快照回调：每次 LLM 调用后触发，用于 CLI UI 实时展示 Tokens 行 */
   onTokenUsageSnapshot?: (stats: TokenUsageStats) => void
+  /** V2.6：扫描阶段进度回调，用于 CLI 单行显示“已扫描将被解析的对象数（文件+目录）” */
+  onScanProgress?: (scannedFiles: number) => void
 }
 
 // 命令返回结果
@@ -325,8 +334,6 @@ export interface LLMConfig {
   base_url?: string;
   temperature: number;
   max_tokens: number;
-  /** 单次解析允许的累计 Token 上限，用于防止 OOM/费用爆炸；0 表示不限制 */
-  max_total_tokens: number;
   timeout: number;
   proxy?: string;
   max_retries: number;

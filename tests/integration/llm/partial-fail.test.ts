@@ -8,7 +8,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as os from 'os';
 import { startMockOpenAIServer } from '../../utils/mock-openai-server';
-import { createTestConfig } from '../../utils/test-config-helper';
+import { createTestConfigInDir } from '../../utils/test-config-helper';
 
 const execAsync = promisify(exec);
 
@@ -19,9 +19,10 @@ function mkdtemp(prefix: string): string {
 describe('12.3.4 LLM 部分失败路径 (ST-LLM-PARTIAL-FAIL-001)', () => {
   let testDir: string;
   let mock: { baseUrl: string; close: () => Promise<void> };
-  let configPath: string;
-  let configTempDir: string;
+  let tempHome: string;
   const repoRoot = path.join(__dirname, '../../..');
+  const originalHome = process.env.HOME;
+  const originalUserProfile = process.env.USERPROFILE;
 
   beforeAll(async () => {
     await execAsync('npm run build', { cwd: repoRoot });
@@ -31,21 +32,25 @@ describe('12.3.4 LLM 部分失败路径 (ST-LLM-PARTIAL-FAIL-001)', () => {
     testDir = mkdtemp('code-analyze-partial-fail');
     // 请求 1 为 connect 测试；2-4 为第 1 个文件三步；5-7 为第 2 个文件；8 为第 3 个文件第 1 步。使第 8 次失败，前 2 个文件成功。
     mock = await startMockOpenAIServer({ failRequestIndices: [8] });
-    const { configPath: cp, tempDir: td } = await createTestConfig({
+    tempHome = mkdtemp('ca-partial-fail-home');
+    await fs.ensureDir(tempHome);
+    await createTestConfigInDir(tempHome, {
       llmBaseUrl: mock.baseUrl,
       llmApiKey: 'test',
       llmModel: 'mock',
       cacheEnabled: false,
       cacheMaxSizeMb: 0,
     });
-    configPath = cp;
-    configTempDir = td;
+    process.env.HOME = tempHome;
+    process.env.USERPROFILE = tempHome;
   });
 
   afterEach(async () => {
     if (mock) await mock.close();
     await fs.remove(testDir).catch(() => {});
-    if (configTempDir) await fs.remove(configTempDir).catch(() => {});
+    process.env.HOME = originalHome;
+    process.env.USERPROFILE = originalUserProfile;
+    if (tempHome) await fs.remove(tempHome).catch(() => {});
   });
 
   /**
@@ -64,8 +69,8 @@ describe('12.3.4 LLM 部分失败路径 (ST-LLM-PARTIAL-FAIL-001)', () => {
     let exitCode = 0;
     try {
       const result = await execAsync(
-        `node dist/cli.js analyze --path "${testDir}" --mode full --force --no-skills --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm -c "${configPath}"`,
-        { cwd: repoRoot }
+        `node dist/cli.js --path "${testDir}" --mode full --no-skills --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0`,
+        { cwd: repoRoot, env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome } }
       );
       stdout = result.stdout;
       stderr = result.stderr;

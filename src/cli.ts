@@ -7,12 +7,13 @@ import { version } from '../package.json';
 import { AnalysisAppService } from './application/analysis.app.service';
 import { configManager } from './common/config';
 import { logger } from './common/logger';
-import { cliRenderer, confirm, select } from './common/ui';
+import { cliRenderer } from './common/ui';
 import type { TokenUsageStats } from './common/types';
 import { AppError, ErrorCode } from './common/errors';
 import { LocalStorageService } from './infrastructure/storage.service';
 import { GitService } from './infrastructure/git.service';
 import { generateProjectSlug } from './common/utils';
+import { DEFAULT_CONCURRENCY } from './common/constants';
 
 const program = new Command();
 
@@ -23,55 +24,12 @@ program
   .description('独立的大型项目代码理解与分析工具')
   .version(version, '-v, --version', '显示版本号')
   .helpOption('-h, --help', '显示帮助信息')
-  .option('-c, --config <path>', '指定配置文件路径', '~/.config/code-analyze/config.yaml')
-  .option('-o, --output <format>', '输出格式：text/json/markdown', 'text')
-  .option('--log-level <level>', '日志级别：debug/info/warn/error');
-
-// init 子命令：显式初始化配置文件（V2.5）
-program
-  .command('init')
-  .description('初始化或重置配置文件（V2.5）')
-  .action(async () => {
-    const globalOptions = program.opts();
-    const cliConfigPath = globalOptions.config as string | undefined;
-
-    try {
-      const resolvedPath = cliConfigPath || '~/.config/code-analyze/config.yaml';
-      const fsPath = resolvedPath.replace('~', process.env.HOME || process.env.USERPROFILE || '');
-      const exists = await fs.pathExists(fsPath);
-
-      if (exists) {
-        const overwrite = await confirm(
-          `检测到配置文件已存在：${fsPath}，是否覆盖为默认配置？（默认：否）`,
-          false,
-        );
-        if (!overwrite) {
-          logger.info('用户选择保留现有配置，init 退出');
-          process.exit(0);
-          return;
-        }
-      }
-
-      await configManager.init(cliConfigPath);
-      logger.success(`配置文件已写入：${fsPath}`);
-      process.exit(0);
-    } catch (error) {
-      logger.error('初始化配置失败', error as Error);
-      process.exit(1);
-    }
-  });
-
-// analyze子命令
-program
-  .command('analyze')
-  .description('执行项目代码解析')
-  .option('-p, --path <path>', '指定解析的项目根路径', process.cwd())
+  .option('--log-level <level>', '日志级别：debug/info/warn/error')
+  .option('--path <path>', '指定解析的项目根路径', process.cwd())
   .option('-m, --mode <mode>', '解析模式：full/incremental/auto', 'auto')
   .option('-d, --depth <number>', '解析深度，默认无限制', '-1')
-  .option('-C, --concurrency <number>', '并行解析并发数（未传时使用配置 analyze.default_concurrency）')
+  .option('-C, --concurrency <number>', '并行解析并发数（未传时使用 CPU*2，但不超过配置 analyze.max_concurrency）')
   .option('--output-dir <path>', '自定义结果输出目录')
-  .option('--no-confirm', '跳过所有确认提示，自动执行')
-  .option('--force', '强制解析，忽略未提交变更警告')
   .option('--skills-providers <list>', '逗号分隔的 AI 工具标识列表（opencode/cursor/claude/codex）')
   .option('--no-skills', '跳过 Skill 生成')
   // LLM相关参数
@@ -80,27 +38,45 @@ program
   .option('--llm-model <model>', 'LLM模型名称')
   .option('--llm-temperature <number>', 'LLM生成温度（0-2）', parseFloat)
   .option('--llm-max-tokens <number>', 'LLM最大生成Token数', parseInt)
-  .option('--llm-max-total-tokens <number>', '单次解析允许的累计 Token 上限（totalTokens），默认使用配置文件值', parseInt)
   .option('--llm-timeout <ms>', 'LLM调用超时时间（毫秒）', parseInt)
   .option('--llm-max-retries <number>', 'LLM调用最大重试次数', parseInt)
   .option('--llm-retry-delay <ms>', 'LLM重试间隔时间（毫秒）', parseInt)
   .option('--llm-context-window-size <number>', 'LLM上下文窗口大小', parseInt)
   .option('--no-llm-cache', '禁用LLM解析结果缓存')
   .option('--llm-cache-dir <path>', 'LLM缓存存储目录')
-  .option('--clear-cache', '清空现有LLM解析缓存后再执行解析')
-  .action(async (options) => {
+  .option('--clear-cache', '清空现有LLM解析缓存后再执行解析');
+
+// init 子命令：显式初始化配置文件（V2.5）
+program
+  .command('init')
+  .description('初始化或重置配置文件（V2.5）')
+  .action(async () => {
+    try {
+      const resolvedPath = '~/.config/code-analyze/config.yaml';
+      const fsPath = resolvedPath.replace('~', process.env.HOME || process.env.USERPROFILE || '');
+      const exists = await fs.pathExists(fsPath);
+
+      await configManager.init();
+      logger.success(exists ? `配置文件已重置：${fsPath}` : `配置文件已写入：${fsPath}`);
+      process.exit(0);
+    } catch (error) {
+      logger.error('初始化配置失败', error as Error);
+      process.exit(1);
+    }
+  });
+
+// 默认解析（不带子命令时直接执行）
+program.action(async () => {
     const os = require('os');
     try {
       // 加载配置（V2.5：配置未初始化时直接失败，提示先执行 init）
       let config;
-      const cliConfigPath = program.opts().config as string | undefined;
       try {
-        config = await configManager.load(cliConfigPath);
+        config = await configManager.load();
       } catch (e: any) {
         if (e instanceof AppError && e.code === ErrorCode.CONFIG_NOT_INITIALIZED) {
-          const hintPath = cliConfigPath || '~/.config/code-analyze/config.yaml';
           process.stderr.write(
-            `配置文件未初始化，请先执行 "code-analyze init" 创建配置：${hintPath}\n`,
+            `配置文件未初始化，请先执行 "code-analyze init" 创建配置：~/.config/code-analyze/config.yaml\n`,
           );
           process.exit(1);
           return;
@@ -113,12 +89,12 @@ program
       }
 
       // 合并LLM命令行参数
+      const options = program.opts();
       if (options.llmBaseUrl) config.llm.base_url = options.llmBaseUrl;
       if (options.llmApiKey) config.llm.api_key = options.llmApiKey;
       if (options.llmModel) config.llm.model = options.llmModel;
       if (options.llmTemperature !== undefined) config.llm.temperature = options.llmTemperature;
       if (options.llmMaxTokens !== undefined) config.llm.max_tokens = options.llmMaxTokens;
-      if (options.llmMaxTotalTokens !== undefined) config.llm.max_total_tokens = options.llmMaxTotalTokens;
       if (options.llmTimeout !== undefined) config.llm.timeout = options.llmTimeout;
       if (options.llmMaxRetries !== undefined) config.llm.max_retries = options.llmMaxRetries;
       if (options.llmRetryDelay !== undefined) config.llm.retry_delay = options.llmRetryDelay;
@@ -138,13 +114,18 @@ program
         logger.info('LLM缓存已清空');
       }
 
+      // 默认并发：CPU*2，但不超过配置中的 analyze.max_concurrency
+      const cpuBasedConcurrency = DEFAULT_CONCURRENCY;
+      const configuredMax = Number(config.analyze.max_concurrency ?? DEFAULT_CONCURRENCY);
+      const defaultConcurrency =
+        configuredMax > 0 ? Math.min(cpuBasedConcurrency, configuredMax) : cpuBasedConcurrency;
+
       const analysisParams = {
         path: options.path,
         mode: options.mode as any,
         depth: Number(options.depth),
-        concurrency: options.concurrency !== undefined ? Number(options.concurrency) : config.analyze.default_concurrency,
+        concurrency: options.concurrency !== undefined ? Number(options.concurrency) : defaultConcurrency,
         outputDir: options.outputDir || config.global.output_dir,
-        force: options.force || false,
         llmConfig: config.llm,
         skillsProviders: options.skillsProviders
           ? options.skillsProviders.split(',').map((s: string) => s.trim().toLowerCase())
@@ -155,6 +136,9 @@ program
       // V2.5：解析前执行 LLM 连接可用性校验，失败则立即退出（需求文档 13.4.2 / 测试文档 ST-LLM-CONNECT-001）
       const { OpenAIClient } = await import('./infrastructure/llm/openai.client');
       const llmClient = new OpenAIClient(config.llm);
+      logger.info(
+        `LLM 客户端初始化完成，开始测试连接与配置 (url=${config.llm.base_url}, model=${config.llm.model})`,
+      );
       try {
         await llmClient.testConnection(config.llm);
       } catch (e: any) {
@@ -164,16 +148,6 @@ program
       }
 
       const analysisService = new AnalysisAppService();
-
-      // 远程LLM服务风险仅日志告警，不再阻塞交互（设计文档 14.1.2）
-      if (config.llm.base_url && !config.llm.base_url.includes('localhost') && !config.llm.base_url.includes('127.0.0.1')) {
-        logger.warn(
-          `您正在使用远程LLM服务 (${config.llm.base_url})，解析过程中的代码内容将会上传到该服务，相关风险由您自行承担。`,
-        );
-      }
-
-      // 启动统一 CLI 渲染器（进度 / 当前对象 / Tokens 单一区域）
-      logger.info(`开始解析项目：${options.path}`);
 
       // 在 analyze 生命周期内，将所有 logger 输出通过 CLI 渲染器固定到进度块下方，
       // 避免产生额外的进度/对象/Tokens 区域块。
@@ -192,6 +166,9 @@ program
         onTokenUsageSnapshot: (stats: TokenUsageStats) => {
           cliRenderer.updateTokens(stats);
         },
+        onScanProgress: (scannedFiles: number) => {
+          cliRenderer.updateScanProgress(scannedFiles);
+        },
       };
 
       let result;
@@ -199,10 +176,11 @@ program
       result = await analysisService.runAnalysis(paramsWithProgress);
       
       if (result.success) {
+        const files = result.data?.analyzedFilesCount || 0;
+        const dirs = (result as any).data?.analyzedDirsCount || 0;
+        const objects = files + dirs;
         logger.success(
-          `解析完成！共分析 ${result.data?.analyzedFilesCount || 0} 个文件，耗时 ${(
-            (result.data?.duration || 0) / 1000
-          ).toFixed(2)}s`,
+          `解析完成！共处理 ${objects} 个对象`,
         );
         const summaryPath = result.data?.summaryPath || '';
         const summaryLabel = summaryPath ? `入口文件：${path.basename(summaryPath)}` : '入口文件：index.md';
@@ -224,15 +202,7 @@ program
     } catch (error) {
       const err = error as any;
       // V2.5：LLM 连接/配置校验失败时统一输出明确前缀，满足 ST-LLM-CONNECT-001/002/003
-      if (err && err.code === ErrorCode.LLM_TOKEN_LIMIT_EXCEEDED) {
-        const detail = err.message || '';
-        process.stderr.write(
-          `解析终止：累计 Token 使用量超过上限，为防止进程 OOM 已安全中止。\n` +
-            `${detail}\n` +
-            `建议：尝试降低解析深度（如 --depth）、缩小解析路径范围、增加黑名单，或分模块分别运行 "ca analyze"；` +
-            `如仍需解析超大项目，可在 Node 启动参数中适当调整 --max-old-space-size。\n`,
-        );
-      } else if (err && err.code && (
+      if (err && err.code && (
           err.code === ErrorCode.LLM_INVALID_CONFIG ||
           err.code === ErrorCode.LLM_CALL_FAILED ||
           err.code === ErrorCode.LLM_TIMEOUT
@@ -258,14 +228,12 @@ program
   .action(async (absolutePath: string, options: { project?: string; outputDir?: string }) => {
     try {
       let config;
-      const cliConfigPath = program.opts().config as string | undefined;
       try {
-        config = await configManager.load(cliConfigPath);
+        config = await configManager.load();
       } catch (e: any) {
         if (e instanceof AppError && e.code === ErrorCode.CONFIG_NOT_INITIALIZED) {
-          const hintPath = cliConfigPath || '~/.config/code-analyze/config.yaml';
           process.stderr.write(
-            `配置文件未初始化，请先执行 "code-analyze init" 创建配置：${hintPath}\n`,
+            `配置文件未初始化，请先执行 "code-analyze init" 创建配置：~/.config/code-analyze/config.yaml\n`,
           );
           process.exit(1);
           return;
@@ -289,129 +257,6 @@ program
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       process.stderr.write(`查询失败：${msg}\n`);
-      process.exit(1);
-    }
-  });
-
-// config子命令
-program
-  .command('config')
-  .description('管理本地配置')
-  .option('--list', '列出所有配置')
-  .option('--set <key>=<value>', '设置配置项，例如：--set global.log_level=debug')
-  .option('--get <key>', '获取配置项值，例如：--get global.output_format')
-  .option('--reset', '重置所有配置为默认值')
-  .action(async (options) => {
-    try {
-      let config;
-      const cliConfigPath = program.opts().config as string | undefined;
-      try {
-        config = await configManager.load(cliConfigPath);
-      } catch (e: any) {
-        if (e instanceof AppError && e.code === ErrorCode.CONFIG_NOT_INITIALIZED) {
-          const hintPath = cliConfigPath || '~/.config/code-analyze/config.yaml';
-          process.stderr.write(
-            `配置文件未初始化，请先执行 "code-analyze init" 创建配置：${hintPath}\n`,
-          );
-          process.exit(1);
-          return;
-        }
-        throw e;
-      }
-      const outputFormat = program.opts().output;
-
-      if (options.list) {
-        if (outputFormat === 'json') {
-          console.log(JSON.stringify(config, null, 2));
-        } else {
-          console.log(pc.bold(pc.blue('当前配置：')));
-          console.log('\n[global]');
-          Object.entries(config.global).forEach(([key, value]) => console.log(`  ${key} = ${value}`));
-          console.log('\n[analyze]');
-          Object.entries(config.analyze).forEach(([key, value]) => {
-            if (Array.isArray(value)) {
-              console.log(`  ${key} = ${(value as string[]).join(', ')}`);
-            } else {
-              console.log(`  ${key} = ${value}`);
-            }
-          });
-          console.log('\n[skills]');
-          Object.entries(config.skills).forEach(([key, value]) => {
-            if (Array.isArray(value)) {
-              console.log(`  ${key} = ${(value as string[]).join(', ')}`);
-            } else {
-              console.log(`  ${key} = ${value}`);
-            }
-          });
-          console.log('\n[llm]');
-           Object.entries(config.llm).forEach(([key, value]) => console.log(`  ${key} = ${value}`));
-        }
-        return;
-      }
-
-      if (options.get) {
-        const keys = options.get.split('.');
-        let value: any = config;
-        for (const key of keys) {
-          if (value && typeof value === 'object' && key in value) {
-            value = value[key];
-          } else {
-            logger.error(`配置项不存在：${options.get}`);
-            process.exit(1);
-          }
-        }
-        if (outputFormat === 'json') {
-          console.log(JSON.stringify({ key: options.get, value }, null, 2));
-        } else {
-          console.log(`${options.get} = ${value}`);
-        }
-        return;
-      }
-
-      if (options.set) {
-        const [keyStr, valueStr] = options.set.split('=');
-        if (!keyStr || valueStr === undefined) {
-          logger.error('格式错误，请使用 key=value 格式');
-          process.exit(1);
-        }
-
-        const keys = keyStr.split('.');
-        const updateObj: any = {};
-        let current = updateObj;
-        
-        for (let i = 0; i < keys.length - 1; i++) {
-          current[keys[i]] = {};
-          current = current[keys[i]];
-        }
-        
-        // 类型转换
-        let value: any = valueStr;
-        if (valueStr === 'true') value = true;
-        if (valueStr === 'false') value = false;
-        if (!isNaN(Number(valueStr))) value = Number(valueStr);
-
-        current[keys[keys.length - 1]] = value;
-
-        await configManager.save(updateObj);
-        logger.success(`配置已更新：${keyStr} = ${value}`);
-        return;
-      }
-
-      if (options.reset) {
-        const confirmed = await confirm('确定要重置所有配置为默认值吗？', false);
-        if (!confirmed) {
-          logger.info('用户取消操作');
-          process.exit(0);
-        }
-        await configManager.reset();
-        logger.success('配置已重置为默认值');
-        return;
-      }
-
-      // 没有选项时显示帮助
-      program.outputHelp();
-    } catch (error) {
-      logger.error('配置操作失败', error as Error);
       process.exit(1);
     }
   });

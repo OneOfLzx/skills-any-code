@@ -5,7 +5,6 @@ export const AnalyzeProjectCommandSchema = z.object({
   mode: z.enum(['full', 'incremental', 'auto']).default('auto').describe('解析模式'),
   depth: z.number().int().min(1).optional().describe('解析深度，默认无限制'),
   concurrency: z.number().int().min(1).optional().describe('并行解析并发数，默认CPU核心数*2'),
-  force: z.boolean().default(false).describe('是否忽略警告强制执行解析'),
   outputDir: z.string().optional().describe('结果输出目录'),
   skillsProviders: z.array(z.string()).optional().describe('Skill 部署的 AI 工具标识列表'),
   noSkills: z.boolean().optional().describe('是否跳过 Skill 生成')

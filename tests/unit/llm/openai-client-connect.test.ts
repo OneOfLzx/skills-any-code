@@ -17,7 +17,6 @@ const createConfig = (partial: Partial<LLMConfig> = {}): LLMConfig => {
     base_url: 'http://localhost:12345',
     temperature: 0.1,
     max_tokens: 100,
-    max_total_tokens: 200_000,
     timeout: 1000,
     proxy: undefined,
     max_retries: 0,

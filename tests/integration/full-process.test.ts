@@ -46,14 +46,13 @@ describe('Full process integration test', () => {
     const result = await analysisAppService.runAnalysis({
       path: testProject.path,
       mode: 'full',
-      force: true,
+      noSkills: true,
       llmConfig: {
         base_url: mock.baseUrl,
         api_key: 'test',
         model: 'mock',
         temperature: 0.1,
         max_tokens: 1000,
-        max_total_tokens: 200_000,
         timeout: 1000,
         max_retries: 0,
         retry_delay: 1,

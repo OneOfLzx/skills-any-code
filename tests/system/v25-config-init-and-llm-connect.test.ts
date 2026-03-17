@@ -77,7 +77,6 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     const testProject = await TestProjectFactory.create('small', false);
 
     const result = await runCli([
-      'analyze',
       `--path`, testProject.path,
     ]);
 
@@ -96,7 +95,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     const mock = await startMockOpenAIServer();
 
     const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
-    const initResult = await runCli(['init', `-c`, configPath]);
+    const initResult = await runCli(['init']);
     expect(initResult.code).toBe(0);
 
     let yaml = await fs.readFile(configPath, 'utf-8');
@@ -104,9 +103,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     await fs.writeFile(configPath, yaml, 'utf-8');
 
     const result = await runCli([
-      'analyze',
       '--path', testProject.path,
-      '-c', configPath,
     ]);
 
     expect(result.code).toBe(0);
@@ -121,13 +118,11 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     const testProject = await TestProjectFactory.create('small', false);
 
     const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
-    const initResult = await runCli(['init', `-c`, configPath]);
+    const initResult = await runCli(['init']);
     expect(initResult.code).toBe(0);
 
     const result = await runCli([
-      'analyze',
       '--path', testProject.path,
-      '-c', configPath,
     ]);
 
     expect(result.code).toBe(1);
@@ -140,7 +135,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     const testProject = await TestProjectFactory.create('small', false);
 
     const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
-    const initResult = await runCli(['init', `-c`, configPath]);
+    const initResult = await runCli(['init']);
     expect(initResult.code).toBe(0);
 
     // 将 LLM 配置改为不可达地址，但保持 api_key/model 非空
@@ -149,9 +144,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     await fs.writeFile(configPath, yaml, 'utf-8');
 
     const result = await runCli([
-      'analyze',
       '--path', testProject.path,
-      '-c', configPath,
     ]);
 
     expect(result.code).toBe(1);
@@ -168,7 +161,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     });
 
     const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
-    const initResult = await runCli(['init', `-c`, configPath]);
+    const initResult = await runCli(['init']);
     expect(initResult.code).toBe(0);
 
     // 配置完整的 LLM 参数，确保失败来自「服务侧错误」而非配置缺失或 base_url 不可达
@@ -179,9 +172,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     await fs.writeFile(configPath, yaml, 'utf-8');
 
     const result = await runCli([
-      'analyze',
       '--path', testProject.path,
-      '-c', configPath,
     ]);
 
     // Windows 下 SDK 可能返回崩溃码（如 3221226505），接受任意非零退出
@@ -201,7 +192,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     const mock = await startMockOpenAIServer();
 
     const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
-    const initResult = await runCli(['init', `-c`, configPath]);
+    const initResult = await runCli(['init']);
     expect(initResult.code).toBe(0);
 
     let yaml = await fs.readFile(configPath, 'utf-8');
@@ -213,9 +204,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     // 多次执行 analyze，驱动缓存写入与清理
     for (let i = 0; i < 3; i++) {
       const result = await runCli([
-        'analyze',
         '--path', testProject.path,
-        '-c', configPath,
       ]);
       expect(result.code).toBe(0);
     }
@@ -241,7 +230,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     const mock = await startMockOpenAIServer();
 
     const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
-    const initResult = await runCli(['init', `-c`, configPath]);
+    const initResult = await runCli(['init']);
     expect(initResult.code).toBe(0);
 
     // 将 LLM 配置指向 Mock 服务，并将 cache_max_size_mb 设为 0（禁用缓存）
@@ -260,9 +249,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     // 多次执行 analyze，验证不会产生任何缓存文件
     for (let i = 0; i < 2; i++) {
       const result = await runCli([
-        'analyze',
         '--path', testProject.path,
-        '-c', configPath,
       ]);
       expect(result.code).toBe(0);
     }
@@ -304,7 +291,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     );
 
     const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
-    const initResult = await runCli(['init', `-c`, configPath]);
+    const initResult = await runCli(['init']);
     expect(initResult.code).toBe(0);
 
     let yaml = await fs.readFile(configPath, 'utf-8');
@@ -312,9 +299,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     await fs.writeFile(configPath, yaml, 'utf-8');
 
     const result = await runCli([
-      'analyze',
       '--path', projectPath,
-      '-c', configPath,
     ]);
 
     expect(result.code).toBe(0);
@@ -367,7 +352,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     );
 
     const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
-    const initResult = await runCli(['init', `-c`, configPath]);
+    const initResult = await runCli(['init']);
     expect(initResult.code).toBe(0);
 
     let yaml = await fs.readFile(configPath, 'utf-8');
@@ -375,9 +360,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     await fs.writeFile(configPath, yaml, 'utf-8');
 
     const result = await runCli([
-      'analyze',
       '--path', projectPath,
-      '-c', configPath,
     ]);
 
     expect(result.code).toBe(0);

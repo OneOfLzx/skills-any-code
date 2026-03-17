@@ -55,28 +55,5 @@ describe('Config Path Integration Test (INT-CFG-*)', () => {
     expect(projectConfigExists).toBe(false);
   });
   
-  test('INT-CFG-002: 先 init 创建配置后 CLI config --list 正确解析', async () => {
-    process.chdir(tempProjectDir);
-
-    const cliPath = path.join(__dirname, '../../dist/cli.js');
-    await execAsync(`node ${cliPath} init`, {
-      env: {
-        ...process.env,
-        HOME: tempHome,
-        USERPROFILE: tempHome
-      }
-    });
-
-    await execAsync(`node ${cliPath} config --list`, {
-      env: {
-        ...process.env,
-        HOME: tempHome,
-        USERPROFILE: tempHome
-      }
-    });
-
-    const expectedConfigPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
-    const homeConfigExists = await fs.pathExists(expectedConfigPath);
-    expect(homeConfigExists).toBe(true);
-  });
+  // CLI 不再提供 config 子命令；仅保留 ConfigManager 的路径行为集成验证（INT-CFG-001）
 });

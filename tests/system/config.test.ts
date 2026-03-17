@@ -54,7 +54,7 @@ describe('Config System Test (ST-CFG-*)', () => {
       }
     });
 
-    await execAsync(`node ${cliPath} analyze --force --no-confirm --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-model mock --llm-max-retries 0`, {
+    await execAsync(`node ${cliPath} --path "${tempProjectDir}" --mode full --no-skills --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-model mock --llm-max-retries 0`, {
       env: {
         ...process.env,
         HOME: tempHome,
@@ -70,33 +70,5 @@ describe('Config System Test (ST-CFG-*)', () => {
     
     const projectConfigExists = await fs.pathExists(projectConfigPath);
     expect(projectConfigExists).toBe(false);
-  });
-  
-  test('ST-CFG-002: 自定义配置路径参数生效', async () => {
-    const customConfigPath = path.join(tempProjectDir, 'my-config.yaml');
-
-    await execAsync(`node ${cliPath} init -c ${customConfigPath}`, {
-      env: {
-        ...process.env,
-        HOME: tempHome,
-        USERPROFILE: tempHome
-      }
-    });
-
-    await execAsync(`node ${cliPath} config --set global.log_level=debug -c ${customConfigPath}`, {
-      cwd: path.join(__dirname, '../../'),
-      env: {
-        ...process.env,
-        HOME: tempHome,
-        USERPROFILE: tempHome
-      }
-    });
-    
-    const customConfigExists = await fs.pathExists(customConfigPath);
-    expect(customConfigExists).toBe(true);
-    
-    const defaultConfigPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
-    const defaultConfigExists = await fs.pathExists(defaultConfigPath);
-    expect(defaultConfigExists).toBe(false);
   });
 });

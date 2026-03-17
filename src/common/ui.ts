@@ -8,6 +8,7 @@ interface CliRenderState {
   currentObjects: string[];
   tokens?: TokenUsageStats;
   totalKnown: boolean;
+  scannedFiles?: number;
 }
 
 /**
@@ -71,6 +72,15 @@ export class CliMultiSectionRenderer {
   }
 
   /**
+   * 扫描阶段：实时更新“已扫描将被解析的文件数”。
+   * 该信息以单独一行展示，并在同一位置覆盖刷新。
+   */
+  updateScanProgress(scannedFiles: number) {
+    this.state.scannedFiles = scannedFiles;
+    this.render();
+  }
+
+  /**
    * 在进度区域下方追加一条日志。
    * 实现方式：先清空进度区域，将日志打印到 stdout，然后重新渲染进度区域。
    */
@@ -90,7 +100,7 @@ export class CliMultiSectionRenderer {
   }
 
   private buildLines(): string[] {
-    const { total, done, currentObjects, tokens, totalKnown } = this.state;
+    const { total, done, currentObjects, tokens, totalKnown, scannedFiles } = this.state;
 
     const safeTotal = totalKnown && total > 0 ? total : 1;
     const ratio = totalKnown ? Math.max(0, Math.min(1, done / safeTotal)) : 0;
@@ -105,27 +115,30 @@ export class CliMultiSectionRenderer {
 
     const lines: string[] = [];
 
+    // 扫描阶段行：仅当有值时展示一行，实时覆盖刷新（对象=文件+目录）
+    if (typeof scannedFiles === 'number') {
+      lines.push(`已扫描将被解析的对象: ${scannedFiles} 个`);
+    }
+
     // 进度行（V2.4：将「已处理: x/y」拆为独立行，避免被“当前对象路径提取”误判为路径）
     const totalLabel = totalKnown ? String(total) : '?';
     lines.push(`${pc.blue('解析进度')} |${pc.cyan(bar)}| ${percentage}%`);
     lines.push(`已处理: ${done}/${totalLabel} 对象`);
 
     // 当前对象块
-    lines.push('当前对象:');
-    if (currentObjects.length === 0) {
-      lines.push('  [ N/A ]');
-    } else {
+    // 需求：仅当存在 worker 正在处理的对象时才展示该块；无对象时整段不输出（不占用任何行）。
+    if (currentObjects.length > 0) {
+      lines.push('当前对象:');
       for (const obj of currentObjects) {
         lines.push(`  [ ${obj} ]`);
       }
     }
 
-    // Tokens 行
-    if (tokens) {
-      lines.push(
-        `Tokens: in=${tokens.totalPromptTokens} out=${tokens.totalCompletionTokens} total=${tokens.totalTokens}`,
-      );
-    }
+    // Tokens 行（即使 tokens 尚未产生也显示 0，避免首帧缺行导致 UI 跳变）
+    const t = tokens ?? { totalPromptTokens: 0, totalCompletionTokens: 0, totalTokens: 0, totalCalls: 0 };
+    lines.push(
+      `Tokens: in=${t.totalPromptTokens} out=${t.totalCompletionTokens} total=${t.totalTokens}`,
+    );
 
     return lines;
   }

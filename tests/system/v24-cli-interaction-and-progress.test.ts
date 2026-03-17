@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { startMockOpenAIServer } from '../utils/mock-openai-server';
 import { TestProjectFactory } from '../utils/test-project-factory';
-import { createTestConfig } from '../utils/test-config-helper';
+import { createTestConfigInDir } from '../utils/test-config-helper';
 
 const execAsync = promisify(exec);
 
@@ -112,8 +112,9 @@ function extractTokenSnapshots(output: string): TokenSnapshot[] {
 describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () => {
   const repoRoot = path.join(__dirname, '../..');
   let mock: { baseUrl: string; close: () => Promise<void> };
-  let configPath: string;
-  let configTempDir: string;
+  let tempHome: string;
+  const originalHome = process.env.HOME;
+  const originalUserProfile = process.env.USERPROFILE;
 
   beforeAll(async () => {
     // 确保 dist/cli.js 已构建
@@ -122,24 +123,26 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
 
   beforeEach(async () => {
     mock = await startMockOpenAIServer();
-    const { configPath: cp, tempDir: td } = await createTestConfig({
+    tempHome = path.join(os.tmpdir(), `ca-v24-cli-home-${Date.now()}`);
+    await fs.ensureDir(tempHome);
+    await createTestConfigInDir(tempHome, {
       llmBaseUrl: mock.baseUrl,
       llmApiKey: 'test',
       llmModel: 'mock',
       cacheEnabled: false,
       cacheMaxSizeMb: 0,
     });
-    configPath = cp;
-    configTempDir = td;
+    process.env.HOME = tempHome;
+    process.env.USERPROFILE = tempHome;
   });
 
   afterEach(async () => {
     if (mock) {
       await mock.close();
     }
-    if (configTempDir) {
-      await fs.remove(configTempDir).catch(() => {});
-    }
+    process.env.HOME = originalHome;
+    process.env.USERPROFILE = originalUserProfile;
+    if (tempHome) await fs.remove(tempHome).catch(() => {});
   });
 
   /**
@@ -154,18 +157,16 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
       try {
         // 修改一个文件但不提交，制造 dirty 状态
         const targetFile = path.join(project.path, 'src', 'index.ts');
+        await fs.ensureDir(path.dirname(targetFile));
         await fs.appendFile(targetFile, os.EOL + '// dirty change for ST-V24-INTERACT-001');
 
-        // V2.4：移除交互确认，但有未提交变更时服务层仍返回 INCREMENTAL_NOT_AVAILABLE；
-        // 传入 --force 使解析继续执行，验证无交互阻塞
+        // V2.4+：无交互确认；即便存在未提交变更也不阻断解析
         const { code, stdout, stderr } = await runCli(
           [
-            'analyze',
             '--path',
             project.path,
             '--mode',
             'auto',
-            '--force',
             '--no-skills',
             '--llm-base-url',
             mock.baseUrl,
@@ -173,9 +174,6 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
-            '-c',
-            configPath,
-            '--no-confirm',
           ],
           { cwd: repoRoot },
         );
@@ -190,8 +188,8 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
         expect(output).not.toMatch(/确认/);
         expect(output).not.toMatch(/yes\/no/i);
 
-        // 3. 至少出现一次「开始解析项目」类提示，证明流程真实启动
-        expect(output).toMatch(/开始解析项目/);
+        // 3. 至少出现一次启动日志，证明流程真实启动
+        expect(output).toMatch(/解析流程开始/);
       } finally {
         await project.cleanup();
       }
@@ -211,7 +209,6 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
       try {
         const { code, stdout, stderr } = await runCli(
           [
-            'analyze',
             '--path',
             project.path,
             '--mode',
@@ -223,9 +220,6 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
-            '-c',
-            configPath,
-            '--no-confirm',
           ],
           { cwd: project.path },
         );
@@ -256,12 +250,10 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
       try {
         const { code, stdout, stderr } = await runCli(
           [
-            'analyze',
             '--path',
             project.path,
             '--mode',
             'full',
-            '--force',
             '--no-skills',
             '--concurrency',
             '4',
@@ -271,9 +263,6 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
-            '-c',
-            configPath,
-            '--no-confirm',
           ],
           { cwd: project.path },
         );
@@ -302,12 +291,10 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
       try {
         const { code, stdout, stderr } = await runCli(
           [
-            'analyze',
             '--path',
             project.path,
             '--mode',
             'full',
-            '--force',
             '--no-skills',
             '--concurrency',
             '1',
@@ -317,9 +304,6 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
-            '-c',
-            configPath,
-            '--no-confirm',
           ],
           { cwd: project.path },
         );
@@ -351,12 +335,10 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
       try {
         const { code, stdout, stderr } = await runCli(
           [
-            'analyze',
             '--path',
             project.path,
             '--mode',
             'full',
-            '--force',
             '--no-skills',
             '--concurrency',
             '3',
@@ -366,9 +348,6 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
-            '-c',
-            configPath,
-            '--no-confirm',
           ],
           { cwd: project.path },
         );
@@ -403,12 +382,10 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
         // 基线 full，一次完整解析
         await runCli(
           [
-            'analyze',
             '--path',
             project.path,
             '--mode',
             'full',
-            '--force',
             '--no-skills',
             '--llm-base-url',
             mock.baseUrl,
@@ -416,25 +393,21 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
-            '-c',
-            configPath,
-            '--no-confirm',
           ],
           { cwd: project.path },
         );
 
         // 修改一个文件，制造增量场景
         const targetFile = path.join(project.path, 'src', 'index.ts');
+        await fs.ensureDir(path.dirname(targetFile));
         await fs.appendFile(targetFile, os.EOL + '// change for incremental');
 
         const { code, stdout, stderr } = await runCli(
           [
-            'analyze',
             '--path',
             project.path,
             '--mode',
             'incremental',
-            '--force',
             '--no-skills',
             '--concurrency',
             '4',
@@ -444,9 +417,6 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
-            '-c',
-            configPath,
-            '--no-confirm',
           ],
           { cwd: project.path },
         );
@@ -475,12 +445,10 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
       try {
         const { code, stdout, stderr } = await runCli(
           [
-            'analyze',
             '--path',
             project.path,
             '--mode',
             'full',
-            '--force',
             '--no-skills',
             '--llm-base-url',
             mock.baseUrl,
@@ -488,9 +456,6 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
-            '-c',
-            configPath,
-            '--no-confirm',
           ],
           { cwd: project.path },
         );
@@ -526,12 +491,10 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
         // 先做一次 full 建立缓存
         await runCli(
           [
-            'analyze',
             '--path',
             project.path,
             '--mode',
             'full',
-            '--force',
             '--no-skills',
             '--llm-base-url',
             mock.baseUrl,
@@ -539,25 +502,21 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
-            '-c',
-            configPath,
-            '--no-confirm',
           ],
           { cwd: project.path },
         );
 
         // 修改一个文件，触发增量
         const targetFile = path.join(project.path, 'src', 'index.ts');
+        await fs.ensureDir(path.dirname(targetFile));
         await fs.appendFile(targetFile, os.EOL + '// change for incremental tokens');
 
         const { code, stdout, stderr } = await runCli(
           [
-            'analyze',
             '--path',
             project.path,
             '--mode',
             'incremental',
-            '--force',
             '--no-skills',
             '--llm-base-url',
             mock.baseUrl,
@@ -565,9 +524,6 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
-            '-c',
-            configPath,
-            '--no-confirm',
           ],
           { cwd: project.path },
         );
@@ -596,12 +552,10 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
       try {
         const { code, stdout, stderr } = await runCli(
           [
-            'analyze',
             '--path',
             project.path,
             '--mode',
             'full',
-            '--force',
             '--no-skills',
             '--llm-base-url',
             mock.baseUrl,
@@ -609,9 +563,6 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
-            '-c',
-            configPath,
-            '--no-confirm',
           ],
           { cwd: project.path },
         );

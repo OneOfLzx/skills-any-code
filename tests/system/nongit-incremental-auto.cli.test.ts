@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 import { createHash } from 'crypto';
 import { startMockOpenAIServer } from '../utils/mock-openai-server';
 import { TestProjectFactory } from '../utils/test-project-factory';
-import { createTestConfig } from '../utils/test-config-helper';
+import { createTestConfigInDir } from '../utils/test-config-helper';
 import { readFileHashWhenAnalyzedOrThrow } from '../utils/analyzed-record';
 
 const execAsync = promisify(exec);
@@ -58,20 +58,24 @@ describe('E2E/CLI：非Git项目 mode=auto 增量解析（ST-INC-NONGIT-*）', (
     'ST-INC-NONGIT-002: 非Git目录两次 CLI analyze(mode=auto)，第二次变更后不得走“无变更直接返回”路径（hash 更新）',
     async () => {
       const mock = await startMockOpenAIServer();
-      const { configPath, tempDir } = await createTestConfig({
+      const originalHome = process.env.HOME;
+      const originalUserProfile = process.env.USERPROFILE;
+      const tempHome = await fs.mkdtemp(path.join(require('os').tmpdir(), 'ca-nongit-cli-home-'));
+      await createTestConfigInDir(tempHome, {
         llmBaseUrl: mock.baseUrl,
         llmApiKey: 'test',
         llmModel: 'mock',
         cacheEnabled: false,
         cacheMaxSizeMb: 0,
       });
+      process.env.HOME = tempHome;
+      process.env.USERPROFILE = tempHome;
       const project = await TestProjectFactory.create('small', false);
       const targetRel = path.join('src', 'index.ts');
       const targetAbs = path.join(project.path, targetRel);
 
       try {
         const first = await runCli([
-          'analyze',
           '--path',
           project.path,
           '--mode',
@@ -83,9 +87,6 @@ describe('E2E/CLI：非Git项目 mode=auto 增量解析（ST-INC-NONGIT-*）', (
           'test',
           '--llm-max-retries',
           '0',
-          '-c',
-          configPath,
-          '--no-confirm',
         ]);
         expect(first.code).toBe(0);
 
@@ -97,7 +98,6 @@ describe('E2E/CLI：非Git项目 mode=auto 增量解析（ST-INC-NONGIT-*）', (
         const expectedHash2 = sha256(newContent);
 
         const second = await runCli([
-          'analyze',
           '--path',
           project.path,
           '--mode',
@@ -109,9 +109,6 @@ describe('E2E/CLI：非Git项目 mode=auto 增量解析（ST-INC-NONGIT-*）', (
           'test',
           '--llm-max-retries',
           '0',
-          '-c',
-          configPath,
-          '--no-confirm',
         ]);
         expect(second.code).toBe(0);
         expect(second.stdout + second.stderr).not.toContain('没有检测到变更文件');
@@ -121,7 +118,9 @@ describe('E2E/CLI：非Git项目 mode=auto 增量解析（ST-INC-NONGIT-*）', (
         expect(hash2).toBe(expectedHash2);
       } finally {
         await mock.close();
-        await fs.remove(tempDir).catch(() => {});
+        process.env.HOME = originalHome;
+        process.env.USERPROFILE = originalUserProfile;
+        await fs.remove(tempHome).catch(() => {});
         await project.cleanup();
       }
     },

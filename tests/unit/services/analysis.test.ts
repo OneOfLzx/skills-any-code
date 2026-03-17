@@ -146,8 +146,6 @@ describe('AnalysisService 解析服务测试（V2.1 LLM原生）', () => {
         model: 'm',
         temperature: 0.1,
         max_tokens: 1000,
-        // 单次解析 Token 上限（测试场景使用较小值，避免意外大请求）
-        max_total_tokens: 10_000,
         timeout: 1000,
         max_retries: 0,
         retry_delay: 1,
@@ -238,6 +236,9 @@ describe('AnalysisService 解析服务测试（V2.1 LLM原生）', () => {
 
     // 在任务充足时，绝大多数“开始事件”都应发生在 pool 已经满载（active==concurrency）或接近满载的阶段
     const fullLoadStarts = workerStats.startActiveSamples.filter(n => n === 4).length;
-    expect(fullLoadStarts).toBeGreaterThanOrEqual(20 - 4);
+    // 由于「当前对象」语义收敛为 worker in-flight（started 仅在真正提交到 worker 前触发），
+    // “开始事件”会更贴近真实调度边界，因此这里不再要求几乎全部 start 都发生在满载点，
+    // 仅要求在任务充足时至少多次观察到满载状态。
+    expect(fullLoadStarts).toBeGreaterThanOrEqual(4);
   });
 });

@@ -49,9 +49,12 @@ export class IndexService implements IIndexService {
     updatedEntries: Array<{ sourcePath: string; resultPath: string; type: 'file' | 'directory' }>,
     removedPaths: string[]
   ): Promise<void> {
-    const existing = await this.readIndex(storageRoot)
-    if (!existing) {
-      throw new Error('索引文件不存在，无法执行增量更新')
+    const existing = (await this.readIndex(storageRoot)) ?? {
+      version: '1.0',
+      projectRoot: '',
+      storageRoot,
+      generatedAt: new Date().toISOString(),
+      entries: {} as Record<string, IndexEntry>,
     }
 
     for (const removedPath of removedPaths) {

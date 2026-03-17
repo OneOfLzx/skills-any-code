@@ -4,7 +4,7 @@ import fs from 'fs-extra'
 import path from 'path'
 
 import { startMockOpenAIServer } from '../utils/mock-openai-server'
-import { createTestConfig } from '../utils/test-config-helper'
+import { createTestConfigInDir } from '../utils/test-config-helper'
 import { createLargeFixtureProject, mkdtempLargeProjectDir } from '../utils/large-project'
 
 const execFileAsync = promisify(execFile)
@@ -68,8 +68,8 @@ describe('CLI e2e: 大项目解析不应 OOM/crash（问题6）', () => {
     'E2E-LARGE-PROJECT-NO-OOM-001: analyze full --concurrency 4 不应出现 heap OOM，且应以 exitCode=0 正常结束',
     async () => {
       const projectRoot = mkdtempLargeProjectDir('ca-large-cli')
-      let configTempDir = ''
       const mock = await startMockOpenAIServer()
+      const tempHome = mkdtempLargeProjectDir('ca-large-cli-home')
 
       try {
         await createLargeFixtureProject(projectRoot, {
@@ -81,25 +81,24 @@ describe('CLI e2e: 大项目解析不应 OOM/crash（问题6）', () => {
           ext: '.ts',
         })
 
-        const { configPath, tempDir } = await createTestConfig({
+        await fs.ensureDir(tempHome)
+        await createTestConfigInDir(tempHome, {
           llmBaseUrl: mock.baseUrl,
           llmApiKey: 'test',
           llmModel: 'mock',
           cacheEnabled: false,
           cacheMaxSizeMb: 0,
         })
-        configTempDir = tempDir
+        const env = { ...process.env, HOME: tempHome, USERPROFILE: tempHome }
 
         const { code, stdout, stderr } = await runCli(
           [
-            'analyze',
             '--path',
             projectRoot,
             '--mode',
             'full',
             '--concurrency',
             '4',
-            '--force',
             '--no-skills',
             '--llm-base-url',
             mock.baseUrl,
@@ -107,11 +106,8 @@ describe('CLI e2e: 大项目解析不应 OOM/crash（问题6）', () => {
             'test',
             '--llm-max-retries',
             '0',
-            '--no-confirm',
-            '-c',
-            configPath,
           ],
-          { timeoutMs: 360000 },
+          { timeoutMs: 360000, env },
         )
 
         const combined = stripAnsi((stdout ?? '') + (stderr ?? ''))
@@ -123,7 +119,7 @@ describe('CLI e2e: 大项目解析不应 OOM/crash（问题6）', () => {
         expect(combined).toContain('共分析')
       } finally {
         await mock.close()
-        if (configTempDir) await fs.remove(configTempDir).catch(() => {})
+        await fs.remove(tempHome).catch(() => {})
         await fs.remove(projectRoot).catch(() => {})
       }
     },

@@ -48,7 +48,6 @@ llm:
   model: ""
   temperature: 0.1
   max_tokens: 4000
-  max_total_tokens: 200000
   timeout: 60000
   max_retries: 0
   retry_delay: 1000

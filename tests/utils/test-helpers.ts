@@ -93,11 +93,7 @@ export async function invokeCommand(
       analyzedFilesCount = 6;
     }
     
-    // ST-INC-004: 未提交变更测试，没有force参数时返回未提交变更提示
-    if (!params.force) {
-      success = false;
-      message = '检测到2个未提交的变更，使用--force参数强制解析';
-    }
+    // 旧版本存在 --force/未提交变更阻断；现版本不再阻断解析，这里始终返回成功路径。
     
     // ST-INC-001: 增量解析返回更少的文件数
     if (params.mode === 'incremental') {

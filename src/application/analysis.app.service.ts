@@ -25,8 +25,12 @@ import type { AnalysisMetadata } from '../common/types'
 export class AnalysisAppService {
   private totalObjects = 0
   private completedObjects = 0
+  // 当前正在 worker 中执行的对象（严格意义上的 in-flight）
   private activeObjects: Set<string> = new Set()
   private progressEnabled = false
+  private onProgress?: AnalyzeProjectCommandParams['onProgress']
+  private concurrency = DEFAULT_CONCURRENCY
+  private lastRenderedCurrentKey: string | null = null
 
   private async buildNonGitFileSnapshot(
     projectRoot: string,
@@ -37,12 +41,6 @@ export class AnalysisAppService {
     const walk = async (dir: string): Promise<void> => {
       const entries = await fs.readdir(dir, { withFileTypes: true })
       for (const entry of entries) {
-        if (
-          entry.isDirectory() &&
-          (entry.name === '.code-analyze-result' || entry.name === '.code-analyze-internal')
-        ) {
-          continue
-        }
         const fullPath = path.join(dir, entry.name)
         const rel = path.relative(projectRoot, fullPath)
         const key = entry.isDirectory() ? `${rel}/` : rel
@@ -101,10 +99,75 @@ export class AnalysisAppService {
     return Array.from(changed)
   }
 
+  private async findMissingResultObjects(
+    projectRoot: string,
+    depth: number,
+    blacklistService: BlacklistService,
+    storageRoot: string,
+  ): Promise<{ missingFiles: string[]; missingDirs: string[] }> {
+    const missingFiles: string[] = []
+    const missingDirs: string[] = []
+
+    const depthEnabled = depth !== undefined && depth >= 1
+    const maxDepth = depthEnabled ? depth : Number.POSITIVE_INFINITY
+    const { getFileOutputPath } = await import('../common/utils')
+
+    const walk = async (dirAbs: string, dirRel: string, currentDepth: number): Promise<void> => {
+      if (currentDepth > maxDepth) return
+
+      // 目录结果文件缺失：<storageRoot>/<dirRel>/index.md（根目录为 storageRoot/index.md）
+      // 注意：BlacklistService 对 "./" 会归一化为空路径；空路径表示项目根自身，按“不忽略”处理即可
+      if (dirRel === '.' || !blacklistService.isIgnored(`${dirRel}/`)) {
+        const dirMd = path.join(storageRoot, dirRel === '.' ? '' : dirRel, 'index.md')
+        if (!(await fs.pathExists(dirMd))) {
+          missingDirs.push(dirRel === '.' ? '.' : dirRel)
+        }
+      }
+
+      const entries = await fs.readdir(dirAbs, { withFileTypes: true })
+      for (const entry of entries) {
+        const fullPath = path.join(dirAbs, entry.name)
+        const rel = path.relative(projectRoot, fullPath) || entry.name
+        const key = entry.isDirectory() ? `${rel}/` : rel
+        if (blacklistService.isIgnored(key)) {
+          continue
+        }
+        if (entry.isDirectory()) {
+          await walk(fullPath, rel, currentDepth + 1)
+        } else if (entry.isFile()) {
+          const expected = getFileOutputPath(storageRoot, rel)
+          if (!(await fs.pathExists(expected))) {
+            missingFiles.push(rel)
+          }
+        }
+      }
+    }
+
+    const rootStat = await fs.stat(projectRoot)
+    if (rootStat.isFile()) {
+      const rel = path.basename(projectRoot)
+      const expected = getFileOutputPath(storageRoot, rel)
+      if (!(await fs.pathExists(expected))) {
+        missingFiles.push(rel)
+      }
+      return { missingFiles, missingDirs }
+    }
+
+    await walk(projectRoot, '.', 1)
+    return { missingFiles, missingDirs }
+  }
+
   async runAnalysis(params: AnalyzeProjectCommandParams & { outputDir?: string }): Promise<AnalyzeProjectCommandResult> {
     const projectRoot = params.path || process.cwd()
+    logger.info(`解析流程开始，项目根路径：${projectRoot}`)
     // 仅在需要 CLI 进度渲染时才维护 activeObjects 快照，避免在性能/集成测试中产生 O(n log n) 排序开销。
     this.progressEnabled = typeof params.onProgress === 'function'
+    this.onProgress = params.onProgress
+    this.concurrency = params.concurrency || DEFAULT_CONCURRENCY
+    this.totalObjects = 0
+    this.completedObjects = 0
+    this.activeObjects = new Set()
+    this.lastRenderedCurrentKey = null
     const outputDir = params.outputDir
     const gitService = new GitService(projectRoot)
     const storageService = new LocalStorageService(projectRoot, outputDir)
@@ -122,19 +185,6 @@ export class AnalysisAppService {
       const gitSlug = await gitService.getProjectSlug()
       projectSlug = generateProjectSlug(projectRoot, true, gitSlug)
       logger.debug(`Git项目信息：分支=${currentBranch}，commit=${currentCommit}，slug=${gitSlug}`)
-      
-      // 检测未提交变更
-      const uncommitted = await gitService.getUncommittedChanges()
-      logger.debug(`检测到未提交变更：${uncommitted.length}个，force参数=${params.force}`)
-      if (uncommitted.length > 0 && !params.force) {
-        logger.debug(`未提交变更文件列表：${uncommitted.join(', ')}`)
-        return {
-          success: false,
-          code: ErrorCode.INCREMENTAL_NOT_AVAILABLE,
-          message: `检测到${uncommitted.length}个未提交的变更，使用--force参数强制解析`,
-          errors: uncommitted.map(path => ({ path, message: '未提交的变更文件' }))
-        }
-      }
     } else {
       projectSlug = generateProjectSlug(projectRoot, false)
     }
@@ -143,8 +193,11 @@ export class AnalysisAppService {
     let mode: 'full' | 'incremental' = params.mode === 'full' ? 'full' : 'incremental'
     if (params.mode === 'auto') {
       const existingMeta = await storageService.getMetadata(projectSlug)
-      mode = existingMeta ? 'incremental' : 'full'
-      logger.debug(`自动检测解析模式：现有元数据=${!!existingMeta}，使用模式=${mode}`)
+      const hasAnyResult = await storageService.hasAnyResult(projectSlug)
+      mode = hasAnyResult ? 'incremental' : 'full'
+      logger.debug(
+        `自动检测解析模式：已有任意结果=${hasAnyResult}，现有元数据=${!!existingMeta}，使用模式=${mode}`,
+      )
     }
     logger.info(`使用解析模式：${mode}`)
 
@@ -159,6 +212,18 @@ export class AnalysisAppService {
     const blacklistService = new BlacklistService()
     await blacklistService.load(runConfig.analyze.blacklist, projectRoot)
     const llmConfig = params.llmConfig as LLMConfig
+    const storageRoot = getStoragePath(projectRoot, outputDir)
+
+    if (!params.noSkills) {
+      try {
+        const skillGenerator = new SkillGenerator()
+        const providers = (params.skillsProviders ?? runConfig.skills.default_providers) as SkillProvider[]
+        await skillGenerator.generate({ projectRoot, storageRoot, providers })
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error)
+        logger.warn(`Skill 生成失败：${msg}`)
+      }
+    }
 
     const analysisService = new AnalysisService(
       gitService,
@@ -176,7 +241,6 @@ export class AnalysisAppService {
     // 执行解析
     logger.debug(`解析参数：depth=${params.depth}, concurrency=${params.concurrency || DEFAULT_CONCURRENCY}`)
     if (mode === 'full') {
-      logger.info(`开始执行全量解析...`)
       const total = await analysisService.countObjects(projectRoot, params.depth ?? -1)
       this.totalObjects = total
       params.onTotalKnown?.(total)
@@ -188,10 +252,10 @@ export class AnalysisAppService {
         onObjectPlanned: obj => this.handleObjectPlanned(obj),
         onObjectStarted: obj => this.handleObjectStarted(obj),
         onObjectCompleted: (obj, meta) => this.handleObjectCompleted(obj, meta, params),
+        onScanProgress: params.onScanProgress,
       })
     } else {
       // 增量解析
-      logger.info(`开始执行增量解析...`)
       const existingMeta = await storageService.getMetadata(projectSlug)
       const lastCommit = existingMeta?.gitCommits?.[existingMeta.gitCommits.length - 1]?.hash
       logger.debug(`上次解析commit：${lastCommit}`)
@@ -204,13 +268,7 @@ export class AnalysisAppService {
             logger.debug(`检测到变更文件：${changedFiles.length}个`)
             logger.debug(`变更文件列表：${changedFiles.join(', ')}`)
           } catch (e) {
-            logger.warn(`commit差异比较失败，回退到全量解析：${(e as Error).message}`)
-            // commit差异比较失败，回退到全量解析
-            analysisResult = await analysisService.fullAnalysis({
-              projectRoot,
-              depth: params.depth,
-              concurrency: params.concurrency || DEFAULT_CONCURRENCY
-            })
+            logger.warn(`commit差异比较失败，将仅基于未提交变更与结果缺失进行增量：${(e as Error).message}`)
           }
         }
       } else {
@@ -224,72 +282,90 @@ export class AnalysisAppService {
         }
       }
 
-      // V2.4：在增量模式下，若存在未提交变更且调用方显式传入 --force，
-      // 则将未提交文件也纳入候选变更集合，保证「增量+dirty」场景仍有实际解析对象，
-      // 满足 ST-V24-PROG-CONC-003 / ST-V24-TOK-002 对 incremental 行为的约束。
-      if (params.force) {
-        const uncommitted = await gitService.getUncommittedChanges()
-        if (uncommitted.length > 0) {
-          logger.debug(`增量模式下检测到未提交变更文件：${uncommitted.length}个，将一并纳入增量集合`)
-          const merged = new Set<string>([...changedFiles, ...uncommitted])
-          changedFiles = Array.from(merged)
-          logger.debug(`合并后的增量候选文件数：${changedFiles.length}个`)
+      // 增量模式下，将未提交变更也纳入候选集合，确保「增量 + dirty」仍有解析对象。
+      if (isGit) {
+        try {
+          const uncommitted = await gitService.getUncommittedChanges()
+          if (uncommitted.length > 0) {
+            logger.debug(`增量模式下检测到未提交变更文件：${uncommitted.length}个，将一并纳入增量集合`)
+            const merged = new Set<string>([...changedFiles, ...uncommitted])
+            changedFiles = Array.from(merged)
+            logger.debug(`合并后的增量候选文件数：${changedFiles.length}个`)
+          }
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : String(e)
+          logger.warn(`获取未提交变更失败，将仅基于 commit diff 继续：${msg}`)
         }
       }
 
-      if (changedFiles.length === 0) {
-        // 非 Git 且缺少历史快照时，无法可靠判断变更：回退全量，确保“第二次修改后仍有工作量”
-        if (!isGit && !existingMeta?.fileSnapshot) {
-          logger.info(`非Git项目缺少历史快照，回退到全量解析以避免误判为无变更`)
-          analysisResult = await analysisService.fullAnalysis({
-            projectRoot,
-            depth: params.depth,
-            concurrency: params.concurrency || DEFAULT_CONCURRENCY
-          })
-        } else {
-          logger.info(`没有检测到变更文件，直接返回现有解析结果`)
-          const storageRoot = getStoragePath(projectRoot, outputDir)
-          analysisResult = {
-            success: true,
-            analyzedFilesCount: 0,
-            analyzedDirsCount: 0,
-            duration: Date.now() - startTime,
-            errors: [],
-            projectSlug,
-            summaryPath: path.join(storageRoot, 'index.md'),
-            indexEntries: [],
-            removedSourcePaths: []
-          }
+      // 增量自修复：扫描源码树，补入“结果缺失但源码未变更”的文件/目录。
+      // 注意：即便 changedFiles 为空，只要存在缺失结果，也应当执行一次增量解析来补齐。
+      const missing = await this.findMissingResultObjects(
+        projectRoot,
+        params.depth ?? -1,
+        blacklistService,
+        storageRoot,
+      )
+      if (missing.missingFiles.length > 0) {
+        const merged = new Set<string>([...changedFiles, ...missing.missingFiles])
+        changedFiles = Array.from(merged)
+      }
+      const changedDirs = missing.missingDirs
+
+      // 计算最终会参与增量解析的目录集合：
+      // - 一部分来自缺失结果的目录（changedDirs）
+      // - 一部分来自变更文件所在的父目录（affectedDirsFromFiles）
+      const affectedDirsFromFiles = changedFiles
+        .map(file => {
+          const parts = file.split(/[/\\]/)
+          return parts.slice(0, -1).join('/')
+        })
+        .filter(Boolean)
+
+      const affectedDirs = Array.from(
+        new Set<string>([
+          ...affectedDirsFromFiles,
+          ...changedDirs,
+        ]),
+      )
+
+      if (changedFiles.length === 0 && affectedDirs.length === 0) {
+        logger.info(`没有检测到需要重新解析的对象，直接返回现有解析结果`)
+        analysisResult = {
+          success: true,
+          analyzedFilesCount: 0,
+          analyzedDirsCount: 0,
+          duration: Date.now() - startTime,
+          errors: [],
+          projectSlug,
+          summaryPath: path.join(storageRoot, 'index.md'),
+          indexEntries: [],
+          removedSourcePaths: [],
         }
       } else {
-        // 增量模式下，total 由变更文件数决定，确保首帧 progress total 为真实对象总数，而非占位值。
-        this.totalObjects = changedFiles.length
+        // 增量模式下，total 由“文件+目录”对象数决定，确保首帧 progress total 反映真实对象总数。
+        // 目录对象以 affectedDirs 为准（含变更文件推导出的父目录 + 结果缺失目录）。
+        this.totalObjects = changedFiles.length + affectedDirs.length
         params.onTotalKnown?.(this.totalObjects)
 
-        logger.info(`开始解析${changedFiles.length}个变更文件...`)
+        logger.info(
+          `开始解析 ${this.totalObjects} 个对象...`,
+        )
         analysisResult = await analysisService.incrementalAnalysis({
           projectRoot,
           changedFiles,
+          changedDirs: affectedDirs,
           baseCommit: lastCommit ?? '',
           targetCommit: currentCommit,
           concurrency: params.concurrency || DEFAULT_CONCURRENCY,
           onObjectPlanned: obj => this.handleObjectPlanned(obj),
           onObjectStarted: obj => this.handleObjectStarted(obj),
           onObjectCompleted: (obj, meta) => this.handleObjectCompleted(obj, meta, params),
+          onScanProgress: params.onScanProgress,
         })
       }
     }
     
-    // 如果是第二次及之后的全量解析，且已存在历史元数据，则保持 analyzedFilesCount 与历史一致，
-    // 避免将 .code-analyze-result 或其他派生产物计入源码文件数（设计文档 §12.3.1 / ST-V23-BL-OUTDIR-001）
-    if (mode === 'full') {
-      const existingMeta = await storageService.getMetadata(projectSlug)
-      const outDirExists = await fs.pathExists(getStoragePath(projectRoot, outputDir))
-      if (existingMeta && outDirExists) {
-        analysisResult.analyzedFilesCount = existingMeta.analyzedFilesCount
-      }
-    }
-
     // 保存元数据
     const meta = {
       projectRoot,
@@ -315,8 +391,6 @@ export class AnalysisAppService {
     
     logger.debug(`保存解析元数据：git commits=${meta.gitCommits.length}条，文件数=${meta.analyzedFilesCount}`)
     await storageService.saveMetadata(projectSlug, meta)
-
-    const storageRoot = getStoragePath(projectRoot, outputDir)
     const indexService = new IndexService()
 
     if (mode === 'full') {
@@ -330,17 +404,6 @@ export class AnalysisAppService {
         } catch (e) {
           logger.warn(`增量更新索引失败（可能尚未执行过全量解析）：${(e as Error).message}`)
         }
-      }
-    }
-
-    if (!params.noSkills) {
-      try {
-        const skillGenerator = new SkillGenerator()
-        const providers = (params.skillsProviders ?? runConfig.skills.default_providers) as SkillProvider[]
-        await skillGenerator.generate({ projectRoot, storageRoot, providers })
-      } catch (error: unknown) {
-        const msg = error instanceof Error ? error.message : String(error)
-        logger.warn(`Skill 生成失败：${msg}`)
       }
     }
 
@@ -370,7 +433,9 @@ export class AnalysisAppService {
 
   private handleObjectStarted(obj: AnalysisObject): void {
     if (!this.progressEnabled) return
-    this.activeObjects.add(this.normalizeObjectPath(obj))
+    const normalized = this.normalizeObjectPath(obj)
+    this.activeObjects.add(normalized)
+    this.emitProgressSnapshot(new Set(this.activeObjects), normalized)
   }
 
   private handleObjectCompleted(
@@ -383,29 +448,11 @@ export class AnalysisAppService {
       return
     }
 
-    // 为了让「当前对象」块反映真实的并发窗口，这里在快照中包含“刚完成”的对象，
-    // 然后再从内部 active 集合中移除，避免 UI 长期只看到 1 行退化。
-    const snapshotSet = new Set(this.activeObjects)
     const normalized = this.normalizeObjectPath(obj)
-    snapshotSet.add(normalized)
-    // 文件完成后立即从 active 集合中移除；目录则在整个分析周期内保持“可见”，
-    // 以体现其作为长生命周期聚合对象的角色，避免深层目录场景下 current objects 尾部长期退化为 1。
-    if (obj.type === 'file') {
-      this.activeObjects.delete(normalized)
-    }
-
-    const activePaths = Array.from(snapshotSet)
-      .map(p => p.replace(/\\/g, '/'))
-      .sort()
-    const concurrency = params.concurrency || DEFAULT_CONCURRENCY
-    const topN = activePaths.slice(0, concurrency)
-    // 需求 12.4.2：最多 N 行，N=concurrency，按字典序；无活跃时用刚完成对象占位，保证 incremental 单对象场景也有输出
-    const displayLines = topN.length > 0 ? topN : [normalized.replace(/\\/g, '/')]
-
-    // 向进度回调传递多行路径字符串，交由 CLI 渲染器统一绘制「进度 / 当前对象 / Tokens」单一区域。
-    params.onProgress?.(this.completedObjects, this.totalObjects, {
-      path: displayLines.join('\n'),
-    })
+    // 严格语义：对象完成即从 in-flight 集合移除；不再包含“刚完成”对象，也不做目录长驻。
+    this.activeObjects.delete(normalized)
+    this.concurrency = params.concurrency || DEFAULT_CONCURRENCY
+    this.emitProgressSnapshot(new Set(this.activeObjects), normalized)
   }
 
   private normalizeObjectPath(obj: AnalysisObject): string {
@@ -415,5 +462,26 @@ export class AnalysisAppService {
       return p.endsWith('/') ? p : `${p}/`
     }
     return p
+  }
+
+  private emitProgressSnapshot(snapshot: Set<string>, fallbackNormalized: string): void {
+    if (!this.onProgress) return
+
+    const activePaths = Array.from(snapshot)
+      .map(p => p.replace(/\\/g, '/'))
+      .sort()
+
+    const topN = activePaths.slice(0, this.concurrency)
+    // 无任何 worker in-flight 对象时，不展示当前对象块（传空字符串即可）
+    const displayLines = topN
+    const key = displayLines.join('\n')
+    if (key === this.lastRenderedCurrentKey) {
+      return
+    }
+    this.lastRenderedCurrentKey = key
+
+    this.onProgress(this.completedObjects, this.totalObjects, {
+      path: key,
+    })
   }
 }

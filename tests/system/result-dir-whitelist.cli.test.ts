@@ -4,7 +4,7 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import { startMockOpenAIServer } from '../utils/mock-openai-server';
 import { TestProjectFactory } from '../utils/test-project-factory';
-import { createTestConfig } from '../utils/test-config-helper';
+import { createTestConfigInDir } from '../utils/test-config-helper';
 import { listAllFilesRecursively, assertOnlyAllowedResultFiles } from '../utils/result-dir-whitelist';
 
 const execAsync = promisify(exec);
@@ -40,8 +40,7 @@ async function runCli(
 describe('CLI: 结果目录文件白名单契约（end-to-end）', () => {
   const repoRoot = path.join(__dirname, '../..');
   let mock: { baseUrl: string; close: () => Promise<void> };
-  let configPath: string;
-  let configTempDir: string;
+  let tempHome: string;
   let hasDistCli = false;
 
   beforeAll(async () => {
@@ -51,24 +50,21 @@ describe('CLI: 结果目录文件白名单契约（end-to-end）', () => {
 
   beforeEach(async () => {
     mock = await startMockOpenAIServer();
-    const { configPath: cp, tempDir: td } = await createTestConfig({
+    tempHome = await fs.mkdtemp(path.join(require('os').tmpdir(), 'ca-result-whitelist-home-'));
+    await createTestConfigInDir(tempHome, {
       llmBaseUrl: mock.baseUrl,
       llmApiKey: 'test',
       llmModel: 'mock',
       cacheEnabled: false,
       cacheMaxSizeMb: 0,
     });
-    configPath = cp;
-    configTempDir = td;
   });
 
   afterEach(async () => {
     if (mock) {
       await mock.close();
     }
-    if (configTempDir) {
-      await fs.remove(configTempDir).catch(() => {});
-    }
+    if (tempHome) await fs.remove(tempHome).catch(() => {});
   });
 
   test(
@@ -87,16 +83,16 @@ describe('CLI: 结果目录文件白名单契约（end-to-end）', () => {
           ...process.env,
           TERM: 'dumb',
           FORCE_COLOR: '0',
+          HOME: tempHome,
+          USERPROFILE: tempHome,
         };
 
         const { code, stderr } = await runCli(
           [
-            'analyze',
             '--path',
             project.path,
             '--mode',
             'full',
-            '--force',
             '--no-skills',
             '--output-dir',
             outputDir,
@@ -106,9 +102,6 @@ describe('CLI: 结果目录文件白名单契约（end-to-end）', () => {
             'test',
             '--llm-max-retries',
             '0',
-            '-c',
-            configPath,
-            '--no-confirm',
           ],
           { cwd: repoRoot, env, timeoutMs: 240000 },
         );

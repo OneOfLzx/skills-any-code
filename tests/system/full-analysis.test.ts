@@ -47,14 +47,13 @@ describe('System test: V2.1 LLM原生解析（ST-FULL-* / ST-INC-* 关键场景�
       const res = await app.runAnalysis({
         path: projectPath,
         mode: 'full',
-        force: true,
+        noSkills: true,
         llmConfig: {
           base_url: mock.baseUrl,
           api_key: 'test',
           model: 'mock',
           temperature: 0.1,
           max_tokens: 1000,
-          max_total_tokens: 200_000,
           timeout: 1000,
           max_retries: 0,
           retry_delay: 1,
@@ -85,14 +84,13 @@ describe('System test: V2.1 LLM原生解析（ST-FULL-* / ST-INC-* 关键场景�
       const first = await app.runAnalysis({
         path: projectPath,
         mode: 'full',
-        force: true,
+        noSkills: true,
         llmConfig: {
           base_url: mock.baseUrl,
           api_key: 'test',
           model: 'mock',
           temperature: 0.1,
           max_tokens: 1000,
-          max_total_tokens: 200_000,
           timeout: 1000,
           max_retries: 0,
           retry_delay: 1,
@@ -108,7 +106,7 @@ describe('System test: V2.1 LLM原生解析（ST-FULL-* / ST-INC-* 关键场景�
       const second = await app.runAnalysis({
         path: projectPath,
         mode: 'full',
-        force: true,
+        noSkills: true,
         llmConfig: {
           base_url: mock.baseUrl,
           api_key: 'test',
@@ -145,6 +143,63 @@ describe('System test: V2.1 LLM原生解析（ST-FULL-* / ST-INC-* 关键场景�
     }
   }, 180000);
 
+  test('ST-FULL-011: 空目录/仅黑名单文件目录不生成目录解析文件', async () => {
+    const mock = await startMockOpenAIServer();
+    const testProject = await TestProjectFactory.create('empty', false);
+    const projectPath = testProject.path;
+    try {
+      // 构造目录结构：
+      // - src/emptydir: 完全空目录
+      // - src/only-md: 仅包含 .md（默认黑名单会过滤 *.md）
+      // - src/hascode: 有可解析代码文件，作为对照
+      await fs.ensureDir(path.join(projectPath, 'src', 'emptydir'));
+      await fs.ensureDir(path.join(projectPath, 'src', 'only-md'));
+      await fs.writeFile(path.join(projectPath, 'src', 'only-md', 'readme.md'), '# ignored');
+      await fs.ensureDir(path.join(projectPath, 'src', 'hascode'));
+      await fs.writeFile(path.join(projectPath, 'src', 'hascode', 'a.ts'), 'export const x = 1;');
+
+      const app = new AnalysisAppService();
+      const res = await app.runAnalysis({
+        path: projectPath,
+        mode: 'full',
+        noSkills: true,
+        llmConfig: {
+          base_url: mock.baseUrl,
+          api_key: 'test',
+          model: 'mock',
+          temperature: 0.1,
+          max_tokens: 1000,
+          timeout: 1000,
+          max_retries: 0,
+          retry_delay: 1,
+          context_window_size: 1000,
+          cache_enabled: false,
+          cache_dir: path.join(projectPath, '.cache'),
+          cache_max_size_mb: 0,
+        },
+      } as any);
+
+      expect(res.success).toBe(true);
+
+      const outRoot = path.join(projectPath, '.code-analyze-result');
+      const emptyDirMd = path.join(outRoot, 'src', 'emptydir', 'index.md');
+      const onlyMdDirMd = path.join(outRoot, 'src', 'only-md', 'index.md');
+
+      // 关键断言：空目录与仅黑名单文件目录都不应生成目录解析文件
+      expect(await fs.pathExists(emptyDirMd)).toBe(false);
+      expect(await fs.pathExists(onlyMdDirMd)).toBe(false);
+
+      // 对照断言：有可解析内容的目录应生成目录解析文件与文件解析文件
+      const hasCodeDirMd = path.join(outRoot, 'src', 'hascode', 'index.md');
+      const hasCodeFileMd = path.join(outRoot, 'src', 'hascode', 'a.md');
+      expect(await fs.pathExists(hasCodeDirMd)).toBe(true);
+      expect(await fs.pathExists(hasCodeFileMd)).toBe(true);
+    } finally {
+      await mock.close();
+      await testProject.cleanup();
+    }
+  }, 120000);
+
   test('ST-INC-004: Git项目存在未提交变更且未force时给出提示', async () => {
     const mock = await startMockOpenAIServer();
     const testProject = await TestProjectFactory.create('small', true);
@@ -156,14 +211,13 @@ describe('System test: V2.1 LLM原生解析（ST-FULL-* / ST-INC-* 关键场景�
       const res = await app.runAnalysis({
         path: testProject.path,
         mode: 'auto',
-        force: false,
+        noSkills: true,
         llmConfig: {
           base_url: mock.baseUrl,
           api_key: 'test',
           model: 'mock',
           temperature: 0.1,
           max_tokens: 1000,
-          max_total_tokens: 200_000,
           timeout: 1000,
           max_retries: 0,
           retry_delay: 1,
@@ -174,8 +228,7 @@ describe('System test: V2.1 LLM原生解析（ST-FULL-* / ST-INC-* 关键场景�
         },
       } as any);
 
-      expect(res.success).toBe(false);
-      expect(res.message).toContain('未提交的变更');
+      expect(res.success).toBe(true);
     } finally {
       await mock.close();
       await testProject.cleanup();

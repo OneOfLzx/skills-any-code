@@ -5,27 +5,30 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as os from 'os';
 import { startMockOpenAIServer } from '../../utils/mock-openai-server';
-import { createTestConfig } from '../../utils/test-config-helper';
+import { createTestConfigInDir } from '../../utils/test-config-helper';
 
 describe('CLI 多语言解析测试 (UT-CLI-*)', () => {
   let testDir: string;
-  let configPath: string;
-  let configTempDir: string;
+  let tempHome: string;
   let mock: { baseUrl: string; close: () => Promise<void> };
   const repoRoot = path.join(__dirname, '../../../');
+  const originalHome = process.env.HOME;
+  const originalUserProfile = process.env.USERPROFILE;
 
   beforeEach(async () => {
     testDir = await fs.mkdtemp(path.join(os.tmpdir(), 'code-analyze-test-'));
     mock = await startMockOpenAIServer();
-    const { configPath: cp, tempDir: td } = await createTestConfig({
+    tempHome = path.join(os.tmpdir(), `ca-cli-analyze-home-${Date.now()}`);
+    await fs.ensureDir(tempHome);
+    await createTestConfigInDir(tempHome, {
       llmBaseUrl: mock.baseUrl,
       llmApiKey: 'test',
       llmModel: 'mock',
       cacheEnabled: false,
       cacheMaxSizeMb: 0,
     });
-    configPath = cp;
-    configTempDir = td;
+    process.env.HOME = tempHome;
+    process.env.USERPROFILE = tempHome;
     // 确保 dist/cli.js 存在
     await execAsync('npm run build', { cwd: repoRoot });
   });
@@ -33,7 +36,9 @@ describe('CLI 多语言解析测试 (UT-CLI-*)', () => {
   afterEach(async () => {
     await mock.close();
     await fs.remove(testDir);
-    await fs.remove(configTempDir).catch(() => {});
+    process.env.HOME = originalHome;
+    process.env.USERPROFILE = originalUserProfile;
+    await fs.remove(tempHome).catch(() => {});
   });
 
   /**
@@ -48,8 +53,8 @@ describe('CLI 多语言解析测试 (UT-CLI-*)', () => {
     await fs.writeFile(path.join(testDir, 'main.go'), 'package main\nimport "fmt"\nfunc main() { fmt.Println("Hello Go") }');
 
     const { stdout, stderr } = await execAsync(
-      `node dist/cli.js analyze --path "${testDir}" --mode full --force --log-level info -c "${configPath}" --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
-      { cwd: repoRoot }
+      `node dist/cli.js --path "${testDir}" --mode full --log-level info --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0`,
+      { cwd: repoRoot, env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome } }
     );
     expect(stderr).toBe('');
     expect(stdout).toMatch(/解析完成！共分析 \d+ 个文件/);
@@ -81,8 +86,8 @@ describe('CLI 多语言解析测试 (UT-CLI-*)', () => {
     await fs.writeFile(path.join(testDir, 'src/b.ts'), 'export const b = 2;', 'utf-8');
 
     await execAsync(
-      `node dist/cli.js analyze --path "${testDir}" --mode full --force -c "${configPath}" --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
-      { cwd: repoRoot }
+      `node dist/cli.js --path "${testDir}" --mode full --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0`,
+      { cwd: repoRoot, env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome } }
     );
 
     const resultRoot = path.join(testDir, '.code-analyze-result');
@@ -115,8 +120,8 @@ describe('CLI 多语言解析测试 (UT-CLI-*)', () => {
     await fs.writeFile(path.join(testDir, 'run'), '#!/bin/bash\necho "Running script"\nnpm start');
 
     const { stdout, stderr } = await execAsync(
-      `node dist/cli.js analyze --path ${testDir} --mode full --force --log-level info -c "${configPath}" --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
-      { cwd: repoRoot }
+      `node dist/cli.js --path ${testDir} --mode full --log-level info --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0`,
+      { cwd: repoRoot, env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome } }
     );
     expect(stderr).toBe('');
     expect(stdout).toMatch(/解析完成！共分析 \d+ 个文件/);

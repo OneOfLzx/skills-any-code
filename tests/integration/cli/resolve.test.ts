@@ -49,7 +49,7 @@ describe('CLI resolve 集成测试 (V23)', () => {
 
   it('UT-V23-RESOLVE-001: 解析后 resolve 应返回对应 Markdown 路径', async () => {
     await execAsync(
-      `node dist/cli.js analyze --path "${testDir}" --mode full --force --no-skills -c "${configPath()}" --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
+      `node dist/cli.js --path "${testDir}" --mode full --no-skills --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0`,
       { cwd: repoRoot, env: { ...process.env, ...execEnv() } }
     );
 
@@ -58,7 +58,7 @@ describe('CLI resolve 集成测试 (V23)', () => {
 
     const absPath = path.resolve(testDir, 'src/index.ts').replace(/\\/g, '/');
     const { stdout, stderr } = await execAsync(
-      `node dist/cli.js resolve "${absPath}" --project "${testDir}" -c "${configPath()}"`,
+      `node dist/cli.js resolve "${absPath}" --project "${testDir}"`,
       { cwd: repoRoot, env: { ...process.env, ...execEnv() } }
     );
 
@@ -71,13 +71,13 @@ describe('CLI resolve 集成测试 (V23)', () => {
 
   it('UT-V23-RESOLVE-003: 不存在的路径应输出 N/A', async () => {
     await execAsync(
-      `node dist/cli.js analyze --path "${testDir}" --mode full --force --no-skills -c "${configPath()}" --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
+      `node dist/cli.js --path "${testDir}" --mode full --no-skills --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0`,
       { cwd: repoRoot, env: { ...process.env, ...execEnv() } }
     );
 
     const absPath = path.resolve(testDir, 'src/nonexistent.ts').replace(/\\/g, '/');
     const { stdout } = await execAsync(
-      `node dist/cli.js resolve "${absPath}" --project "${testDir}" -c "${configPath()}"`,
+      `node dist/cli.js resolve "${absPath}" --project "${testDir}"`,
       { cwd: repoRoot, env: { ...process.env, ...execEnv() } }
     );
     expect(stdout.trim()).toBe('N/A');
@@ -86,7 +86,7 @@ describe('CLI resolve 集成测试 (V23)', () => {
   it('UT-V23-RESOLVE-004: 索引不存在时 resolve 返回 N/A（当前实现为 exit 0 + N/A）', async () => {
     const absPath = path.resolve(testDir, 'src/index.ts').replace(/\\/g, '/');
     const { stdout } = await execAsync(
-      `node dist/cli.js resolve "${absPath}" --project "${testDir}" -c "${configPath()}"`,
+      `node dist/cli.js resolve "${absPath}" --project "${testDir}"`,
       { cwd: repoRoot, env: { ...process.env, ...execEnv() } }
     );
     expect(stdout.trim()).toBe('N/A');

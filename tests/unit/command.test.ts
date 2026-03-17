@@ -9,7 +9,6 @@ describe('/analyze-project command (UT-COM-*)', () => {
     
     const result = await invokeCommand('/analyze-project', {
       path: testProject.path,
-      force: true
     });
     
     expect(result.success).toBe(true);
@@ -28,7 +27,6 @@ describe('/analyze-project command (UT-COM-*)', () => {
       mode: 'full',
       depth: 3,
       concurrency: 4,
-      force: true
     });
     
     expect(result.success).toBe(true);
@@ -62,8 +60,7 @@ describe('/analyze-project command (UT-COM-*)', () => {
       path: '/test',
       mode: 'full',
       depth: 5,
-      concurrency: 8,
-      force: true
+      concurrency: 8
     };
     
     const validationResult = AnalyzeProjectCommandSchema.safeParse(validParams);

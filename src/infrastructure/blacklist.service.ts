@@ -30,6 +30,8 @@ export class BlacklistService implements IBlacklistService {
     // 2. 去掉 leading ./ 或 /（ignore 库拒绝此类路径并抛错，见 REGEX_TEST_INVALID_PATH）
     // path.relative 在部分 Windows 场景下可能返回 ".\" 前缀，归一化后为 "./"，会导致 ignore 库抛出 RangeError
     normalized = normalized.replace(/^\.\//, '').replace(/^\/+/, '')
+    // ignore 库不接受空字符串路径；空路径表示“项目根自身”，这里视为不忽略
+    if (!normalized) return false
     return this.ig.ignores(normalized)
   }
 }

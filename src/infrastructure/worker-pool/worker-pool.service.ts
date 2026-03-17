@@ -85,11 +85,6 @@ export class WorkerPoolService implements IWorkerPoolService {
       
       return result
     } catch (e) {
-      // worker 侧可能会抛出受控 AppError（例如 token 上限保护），需要透传 code 给上层做友好退出。
-      const anyErr = e as any
-      if (anyErr?.code === ErrorCode.LLM_TOKEN_LIMIT_EXCEEDED) {
-        throw new AppError(ErrorCode.LLM_TOKEN_LIMIT_EXCEEDED, anyErr?.message || 'LLM token limit exceeded', anyErr?.details)
-      }
       throw new AppError(ErrorCode.WORKER_SCHEDULE_FAILED, 'File analysis task failed', (e as Error).message)
     }
   }
@@ -116,10 +111,6 @@ export class WorkerPoolService implements IWorkerPoolService {
       
       return result
     } catch (e) {
-      const anyErr = e as any
-      if (anyErr?.code === ErrorCode.LLM_TOKEN_LIMIT_EXCEEDED) {
-        throw new AppError(ErrorCode.LLM_TOKEN_LIMIT_EXCEEDED, anyErr?.message || 'LLM token limit exceeded', anyErr?.details)
-      }
       throw new AppError(ErrorCode.WORKER_SCHEDULE_FAILED, 'Directory aggregation task failed', (e as Error).message)
     }
   }
