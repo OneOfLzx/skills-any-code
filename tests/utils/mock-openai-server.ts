@@ -8,6 +8,11 @@ type MockOpenAIOptions = {
    */
   fixedContent?: Record<string, any>;
   /**
+   * If provided, choose response content dynamically by request body / index.
+   * This is useful for multi-step prompt protocols where each step expects a different JSON shape.
+   */
+  dynamicContent?: (args: { bodyStr: string; requestIndex: number }) => Record<string, any> | undefined;
+  /**
    * 1-based request indices that should return 5xx (e.g. [2] = second LLM request returns 500).
    * Used for ST-LLM-PARTIAL-FAIL-001.
    */
@@ -59,18 +64,45 @@ export async function startMockOpenAIServer(options: MockOpenAIOptions = {}) {
         return;
       }
 
+      const dynamic =
+        options.dynamicContent?.({ bodyStr, requestIndex: requestCount }) ??
+        undefined;
+
+      // 默认情况下，根据多步协议提示自动返回对应 JSON 形状，避免“提示要求 {summary}/{description} 但 mock 返回 FileAnalysis”导致解析失败。
+      const autoContent = (() => {
+        // 目录/文件的 description 步：只需要 {"description": "..."}
+        // 注意：不要用裸 '{"description"' 匹配，很多提示会包含示例 schema，可能误命中。
+        if (
+          bodyStr.includes('只返回一个 JSON对象：{"description"') ||
+          bodyStr.includes('只返回一个 JSON 对象：{"description"')
+        ) {
+          return { description: 'mock description' };
+        }
+        // 文件/目录的 summary 步：只需要 {"summary": "..."}
+        // 同理，不要用裸 '{"summary"' 匹配，避免误命中 schema。
+        if (
+          bodyStr.includes('只返回一个JSON对象：{"summary"') ||
+          bodyStr.includes('只返回一个 JSON 对象：{"summary"')
+        ) {
+          return { summary: 'mock summary' };
+        }
+        // 文件结构/分片/合并结构步：只需要 classes/functions
+        if (bodyStr.includes('仅提取') || bodyStr.includes('需要返回的JSON结构如下') || bodyStr.includes('返回的JSON结构（仅包含以下字段）')) {
+          return { classes: [], functions: [] };
+        }
+        return undefined;
+      })();
+
       const contentObj =
         options.fixedContent ??
+        dynamic ??
+        autoContent ??
         ({
-          name: 'mock-file',
-          language: 'TypeScript',
-          linesOfCode: 1,
-          dependencies: [],
-          summary: 'mock summary',
+          // 兜底：尽可能包含常用字段，且不依赖严格 schema
           classes: [],
           functions: [],
-          classDiagram: '',
-          sequenceDiagram: '',
+          summary: 'mock summary',
+          description: 'mock description',
         } satisfies Record<string, any>);
 
       const responseBody = {

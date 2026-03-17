@@ -5,6 +5,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { startMockOpenAIServer } from '../utils/mock-openai-server';
 import { TestProjectFactory } from '../utils/test-project-factory';
+import { createTestConfig } from '../utils/test-config-helper';
 
 const execAsync = promisify(exec);
 
@@ -65,7 +66,14 @@ function extractCurrentObjects(output: string): CurrentObjectsSnapshot {
       current = [];
       continue;
     }
-    if (current && line && (line.includes('/') || line.includes('\\'))) {
+    // 仅收集路径行，排除「已处理: x/y 对象」和「Tokens: in=...」等非路径行
+    if (
+      current &&
+      line &&
+      (line.includes('/') || line.includes('\\')) &&
+      !/^已处理:/.test(line) &&
+      !/^Tokens:/.test(line)
+    ) {
       current.push(line);
     }
   }
@@ -104,6 +112,8 @@ function extractTokenSnapshots(output: string): TokenSnapshot[] {
 describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () => {
   const repoRoot = path.join(__dirname, '../..');
   let mock: { baseUrl: string; close: () => Promise<void> };
+  let configPath: string;
+  let configTempDir: string;
 
   beforeAll(async () => {
     // 确保 dist/cli.js 已构建
@@ -112,11 +122,23 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
 
   beforeEach(async () => {
     mock = await startMockOpenAIServer();
+    const { configPath: cp, tempDir: td } = await createTestConfig({
+      llmBaseUrl: mock.baseUrl,
+      llmApiKey: 'test',
+      llmModel: 'mock',
+      cacheEnabled: false,
+      cacheMaxSizeMb: 0,
+    });
+    configPath = cp;
+    configTempDir = td;
   });
 
   afterEach(async () => {
     if (mock) {
       await mock.close();
+    }
+    if (configTempDir) {
+      await fs.remove(configTempDir).catch(() => {});
     }
   });
 
@@ -134,6 +156,8 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
         const targetFile = path.join(project.path, 'src', 'index.ts');
         await fs.appendFile(targetFile, os.EOL + '// dirty change for ST-V24-INTERACT-001');
 
+        // V2.4：移除交互确认，但有未提交变更时服务层仍返回 INCREMENTAL_NOT_AVAILABLE；
+        // 传入 --force 使解析继续执行，验证无交互阻塞
         const { code, stdout, stderr } = await runCli(
           [
             'analyze',
@@ -141,6 +165,7 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             project.path,
             '--mode',
             'auto',
+            '--force',
             '--no-skills',
             '--llm-base-url',
             mock.baseUrl,
@@ -148,9 +173,11 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
+            '-c',
+            configPath,
             '--no-confirm',
           ],
-          { cwd: project.path },
+          { cwd: repoRoot },
         );
 
         const output = stripAnsi((stdout ?? '') + (stderr ?? ''));
@@ -196,6 +223,8 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
+            '-c',
+            configPath,
             '--no-confirm',
           ],
           { cwd: project.path },
@@ -242,6 +271,8 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
+            '-c',
+            configPath,
             '--no-confirm',
           ],
           { cwd: project.path },
@@ -286,6 +317,8 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
+            '-c',
+            configPath,
             '--no-confirm',
           ],
           { cwd: project.path },
@@ -333,6 +366,8 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
+            '-c',
+            configPath,
             '--no-confirm',
           ],
           { cwd: project.path },
@@ -381,6 +416,8 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
+            '-c',
+            configPath,
             '--no-confirm',
           ],
           { cwd: project.path },
@@ -407,6 +444,8 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
+            '-c',
+            configPath,
             '--no-confirm',
           ],
           { cwd: project.path },
@@ -449,6 +488,8 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
+            '-c',
+            configPath,
             '--no-confirm',
           ],
           { cwd: project.path },
@@ -498,6 +539,8 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
+            '-c',
+            configPath,
             '--no-confirm',
           ],
           { cwd: project.path },
@@ -522,6 +565,8 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
+            '-c',
+            configPath,
             '--no-confirm',
           ],
           { cwd: project.path },
@@ -564,6 +609,8 @@ describe('V2.4 CLI 解析交互与进度/Token 行为 (第15章 ST-V24-*)', () =
             'test',
             '--llm-max-retries',
             '0',
+            '-c',
+            configPath,
             '--no-confirm',
           ],
           { cwd: project.path },

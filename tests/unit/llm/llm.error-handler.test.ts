@@ -27,12 +27,14 @@ describe('LLM错误处理与重试测试（V2.1）', () => {
       model: 'm',
       temperature: 0.1,
       max_tokens: 1000,
+      max_total_tokens: 200_000,
       timeout: 1000,
       max_retries: 1,
       retry_delay: 1,
       context_window_size: 1000,
       cache_enabled: true,
       cache_dir: './.cache',
+      cache_max_size_mb: 0,
     });
 
     const instance = (OpenAI as unknown as jest.Mock).mock.results.at(-1)?.value;
@@ -57,12 +59,14 @@ describe('LLM错误处理与重试测试（V2.1）', () => {
       model: 'm',
       temperature: 0.1,
       max_tokens: 1000,
+      max_total_tokens: 200_000,
       timeout: 1000,
       max_retries: 0,
       retry_delay: 1,
       context_window_size: 1000,
       cache_enabled: true,
       cache_dir: './.cache',
+      cache_max_size_mb: 0,
     });
 
     const instance = (OpenAI as unknown as jest.Mock).mock.results.at(-1)?.value;

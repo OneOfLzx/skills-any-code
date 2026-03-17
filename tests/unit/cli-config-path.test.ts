@@ -30,15 +30,14 @@ describe('CLI默认配置路径测试 (UT-CLI-CFG-*)', () => {
   });
 
   test('UT-CLI-CFG-002: CLI默认配置路径展开正确', async () => {
-    // 触发配置加载（会自动生成默认配置文件）
+    // V2.5：先 init 创建配置，再 load 验证路径
+    await configManager.init();
     await configManager.load();
-    
-    // 检查配置文件生成在正确路径
+
     const expectedConfigPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
     const configExists = await fs.pathExists(expectedConfigPath);
     expect(configExists).toBe(true);
-    
-    // 检查旧路径没有生成配置文件
+
     const oldConfigPath = path.join(tempHome, '.code-analyze', 'config.yaml');
     const oldConfigExists = await fs.pathExists(oldConfigPath);
     expect(oldConfigExists).toBe(false);

@@ -4,6 +4,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import os from 'os';
 import { startMockOpenAIServer } from '../utils/mock-openai-server';
+import { createTestConfigWithLlm } from '../utils/test-config-helper';
 
 const execAsync = promisify(exec);
 
@@ -38,20 +39,27 @@ describe('CLI路径测试 (UT-CLI-PATH-*)', () => {
     await fs.remove(testProjectPath);
   });
 
-  test('UT-CLI-PATH-001: CLI默认配置路径正确，生成在~/.config/code-analyze/config.yaml', async () => {
+  test('UT-CLI-PATH-001: CLI默认配置路径正确，init 生成在~/.config/code-analyze/config.yaml', async () => {
     // 先编译CLI
     await execAsync('npm run build', { cwd: path.join(__dirname, '../../') });
 
-    // 执行CLI命令触发配置生成（config命令会加载配置）
-    await execAsync('node dist/cli.js config --list', {
+    // V2.5：配置不再自动创建，需先执行 init
+    const newConfigPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    await fs.ensureDir(path.dirname(newConfigPath));
+    await execAsync('node dist/cli.js init -c "' + newConfigPath + '"', {
       cwd: path.join(__dirname, '../../'),
       env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome }
     });
 
     // 检查新路径配置文件存在
-    const newConfigPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
     const newConfigExists = await fs.pathExists(newConfigPath);
     expect(newConfigExists).toBe(true);
+
+    // 执行 config --list 验证可正常加载
+    await execAsync('node dist/cli.js config --list -c "' + newConfigPath + '"', {
+      cwd: path.join(__dirname, '../../'),
+      env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome }
+    });
 
     // 检查旧路径配置文件不存在
     const oldConfigPath = path.join(tempHome, '.code-analyze', 'config.yaml');
@@ -63,8 +71,13 @@ describe('CLI路径测试 (UT-CLI-PATH-*)', () => {
     // 先编译CLI
     await execAsync('npm run build', { cwd: path.join(__dirname, '../../') });
 
+    // V2.5：需先 init 创建配置，再执行 analyze
+    const { createTestConfigWithLlm } = await import('../utils/test-config-helper');
+    const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    await createTestConfigWithLlm(configPath, { base_url: mock.baseUrl, api_key: 'test', model: 'mock' });
+
     // 执行分析命令
-    await execAsync(`node dist/cli.js analyze --path ${testProjectPath} --mode full --force --no-confirm --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0`, {
+    await execAsync(`node dist/cli.js analyze --path ${testProjectPath} --mode full --force -c "${configPath}" --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0`, {
       cwd: path.join(__dirname, '../../'),
       env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome }
     });
@@ -90,8 +103,13 @@ describe('CLI路径测试 (UT-CLI-PATH-*)', () => {
     await execAsync('npm run build', { cwd: path.join(__dirname, '../../') });
     const customOutputDir = path.join(testProjectPath, 'my-custom-result');
 
+    // V2.5：需先 init 创建配置
+    const { createTestConfigWithLlm } = await import('../utils/test-config-helper');
+    const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    await createTestConfigWithLlm(configPath, { base_url: mock.baseUrl, api_key: 'test', model: 'mock' });
+
     // 执行分析命令，指定自定义输出目录
-    await execAsync(`node dist/cli.js analyze --path ${testProjectPath} --mode full --force --output-dir ${customOutputDir} --no-confirm --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0`, {
+    await execAsync(`node dist/cli.js analyze --path ${testProjectPath} --mode full --force --output-dir ${customOutputDir} -c "${configPath}" --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0`, {
       cwd: path.join(__dirname, '../../'),
       env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome }
     });

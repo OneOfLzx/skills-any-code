@@ -3,18 +3,38 @@ import { AssertUtils } from '../utils/assert-utils';
 import { AnalysisAppService } from '../../src/application/analysis.app.service';
 import { LocalStorageService } from '../../src/infrastructure/storage.service';
 import * as path from 'path';
+import * as os from 'os';
+import * as fs from 'fs-extra';
 import { startMockOpenAIServer } from '../utils/mock-openai-server';
+import { createTestConfigInDir } from '../utils/test-config-helper';
 
 describe('Full process integration test', () => {
   let analysisAppService: AnalysisAppService;
   let mock: { baseUrl: string; close: () => Promise<void> };
+  let tempHome: string;
+  const originalHome = process.env.HOME;
+  const originalUserProfile = process.env.USERPROFILE;
 
   beforeAll(async () => {
-    analysisAppService = new AnalysisAppService();
     mock = await startMockOpenAIServer();
+    tempHome = path.join(os.tmpdir(), `ca-full-process-${Date.now()}`);
+    await fs.ensureDir(tempHome);
+    await createTestConfigInDir(tempHome, {
+      llmBaseUrl: mock.baseUrl,
+      llmApiKey: 'test',
+      llmModel: 'mock',
+      cacheEnabled: false,
+      cacheMaxSizeMb: 0,
+    });
+    process.env.HOME = tempHome;
+    process.env.USERPROFILE = tempHome;
+    analysisAppService = new AnalysisAppService();
   });
 
   afterAll(async () => {
+    process.env.HOME = originalHome;
+    process.env.USERPROFILE = originalUserProfile;
+    await fs.remove(tempHome).catch(() => {});
     await mock.close();
   });
 
@@ -33,12 +53,14 @@ describe('Full process integration test', () => {
         model: 'mock',
         temperature: 0.1,
         max_tokens: 1000,
+        max_total_tokens: 200_000,
         timeout: 1000,
         max_retries: 0,
         retry_delay: 1,
         context_window_size: 1000,
         cache_enabled: false,
         cache_dir: path.join(testProject.path, '.cache'),
+        cache_max_size_mb: 0,
       }
     });
 

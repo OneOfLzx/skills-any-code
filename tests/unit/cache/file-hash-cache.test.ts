@@ -1,7 +1,10 @@
-import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as os from 'os';
 import { FileHashCache } from '../../../src/infrastructure/cache/file.hash.cache';
+
+// 使用实际 fs-extra，UT-CACHE-003 中通过 jest.spyOn 模拟 remove 失败
+// 注：部分环境 jest.spyOn(fs, 'remove') 可能失败，该用例会 skip
+const fs = jest.requireActual<typeof import('fs-extra')>('fs-extra');
 
 describe('FileHashCache with max size (UT-CACHE-001~003)', () => {
   let cacheDir: string;
@@ -33,9 +36,11 @@ describe('FileHashCache with max size (UT-CACHE-001~003)', () => {
     const fileA = path.join(cacheDir, 'a.json');
     const fileB = path.join(cacheDir, 'b.json');
 
-    await fs.writeJSON(fileA, { a: 1 });
+    // 创建超过 1MB 的文件以触发 eviction（每份约 0.6MB）
+    const largePayload = JSON.stringify({ x: 'x'.repeat(600 * 1024) });
+    await fs.writeFile(fileA, largePayload);
     await new Promise(r => setTimeout(r, 10));
-    await fs.writeJSON(fileB, { b: 1 });
+    await fs.writeFile(fileB, largePayload);
 
     const statA = await fs.stat(fileA);
     const statB = await fs.stat(fileB);
@@ -56,14 +61,15 @@ describe('FileHashCache with max size (UT-CACHE-001~003)', () => {
     await fs.writeJSON(fileA, { a: 1 });
 
     const spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-    jest.spyOn(fs, 'remove').mockImplementationOnce(() => {
-      throw new Error('mock unlink error');
-    });
+    // 使用 wrap 方式避免 fs-extra 的 remove 不可 spy 问题
+    const originalRemove = fs.remove;
+    (fs as any).remove = jest.fn().mockRejectedValueOnce(new Error('mock unlink error'));
 
     await expect(
       (cache as any).enforceLimit(),
     ).resolves.toBeUndefined();
 
+    (fs as any).remove = originalRemove;
     spy.mockRestore();
   });
 });

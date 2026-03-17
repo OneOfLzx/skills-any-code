@@ -5,22 +5,30 @@ import { AppError, ErrorCode } from '../../../src/common/errors';
 
 jest.mock('openai');
 
-const createConfig = (partial?: Partial<LLMConfig>): LLMConfig => ({
-  model: 'test-model',
-  api_key: 'test-key',
-  base_url: 'http://localhost:12345',
-  temperature: 0.1,
-  max_tokens: 100,
-  timeout: 1000,
-  proxy: undefined,
-  max_retries: 0,
-  retry_delay: 1,
-  context_window_size: 1000,
-  cache_enabled: false,
-  cache_dir: '/tmp',
-  cache_max_size_mb: 10,
-  ...partial,
-});
+const omitUndefined = <T extends Record<string, unknown>>(obj: T): Partial<T> =>
+  Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as Partial<T>;
+
+const createConfig = (partial: Partial<LLMConfig> = {}): LLMConfig => {
+  const clean = omitUndefined(partial);
+
+  return {
+    model: 'test-model',
+    api_key: 'test-key',
+    base_url: 'http://localhost:12345',
+    temperature: 0.1,
+    max_tokens: 100,
+    max_total_tokens: 200_000,
+    timeout: 1000,
+    proxy: undefined,
+    max_retries: 0,
+    retry_delay: 1,
+    context_window_size: 1000,
+    cache_enabled: false,
+    cache_dir: '/tmp',
+    cache_max_size_mb: 10,
+    ...clean,
+  };
+};
 
 describe('OpenAIClient connectTest (UT-LLM-CONNECT-001~004)', () => {
   const mockCreate = jest.fn();
@@ -68,5 +76,5 @@ describe('OpenAIClient connectTest (UT-LLM-CONNECT-001~004)', () => {
       message: expect.stringContaining('模型不存在'),
     });
   });
-}
+});
 

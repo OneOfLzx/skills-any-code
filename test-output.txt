@@ -1,0 +1,2182 @@
+﻿
+> code-analyze-cli@2.0.0 test
+> jest
+
+node.exe : FAIL tests/performance/benchmark.test.ts
+所在位置 行:1 字符: 1
++ & "C:\Software\nodejs/node.exe" "C:\Software\nodejs/node_modules/npm/ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (FAIL tests/performance/benchmark.test.ts:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  鈼?Test suite failed to run
+
+    [96mtests/performance/benchmark.test.ts[0m:[93m33[0m:[93m9[0m - [91merror[0m[90m TS2741: [0mProperty 'cac
+he_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature: number; max_tokens
+: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; cache_enabled: false;
+ cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m33[0m         llmConfig: {
+    [7m  [0m [91m        ~~~~~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+      [96msrc/common/types.ts[0m:[93m216[0m:[93m3[0m
+        [7m216[0m   llmConfig?: LLMConfig
+        [7m   [0m [96m  ~~~~~~~~~[0m
+        The expected type comes from property 'llmConfig' which is declared here on type 'AnalyzeProjectCommandParams &
+ { outputDir?: string | undefined; }'
+    [96mtests/performance/benchmark.test.ts[0m:[93m77[0m:[93m7[0m - [91merror[0m[90m TS2741: [0mProperty 'cac
+he_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature: number; max_tokens
+: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; cache_enabled: false;
+ cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m77[0m       llmConfig: {
+    [7m  [0m [91m      ~~~~~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+      [96msrc/common/types.ts[0m:[93m216[0m:[93m3[0m
+        [7m216[0m   llmConfig?: LLMConfig
+        [7m   [0m [96m  ~~~~~~~~~[0m
+        The expected type comes from property 'llmConfig' which is declared here on type 'AnalyzeProjectCommandParams &
+ { outputDir?: string | undefined; }'
+    [96mtests/performance/benchmark.test.ts[0m:[93m106[0m:[93m7[0m - [91merror[0m[90m TS2741: [0mProperty 'ca
+che_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature: number; max_token
+s: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; cache_enabled: false
+; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m106[0m       llmConfig: {
+    [7m   [0m [91m      ~~~~~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+      [96msrc/common/types.ts[0m:[93m216[0m:[93m3[0m
+        [7m216[0m   llmConfig?: LLMConfig
+        [7m   [0m [96m  ~~~~~~~~~[0m
+        The expected type comes from property 'llmConfig' which is declared here on type 'AnalyzeProjectCommandParams &
+ { outputDir?: string | undefined; }'
+    [96mtests/performance/benchmark.test.ts[0m:[93m147[0m:[93m9[0m - [91merror[0m[90m TS2741: [0mProperty 'ca
+che_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature: number; max_token
+s: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; cache_enabled: false
+; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m147[0m         llmConfig: {
+    [7m   [0m [91m        ~~~~~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+      [96msrc/common/types.ts[0m:[93m216[0m:[93m3[0m
+        [7m216[0m   llmConfig?: LLMConfig
+        [7m   [0m [96m  ~~~~~~~~~[0m
+        The expected type comes from property 'llmConfig' which is declared here on type 'AnalyzeProjectCommandParams &
+ { outputDir?: string | undefined; }'
+
+FAIL tests/system/v24-cli-interaction-and-progress.test.ts (31.234 s)
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-INTERACT-001: Git + 鏈彁浜ゅ彉鏇存椂 analyze 涓嶅啀寮瑰嚭纭鎻愮ず
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      157 |
+      158 |         // 1. 杩涚▼搴旀甯哥粨鏉燂紙鎸夌収 V2.4 鐩爣璇箟锛孋LI 涓嶅啀鍥犱负 dirty+auto 鍦ㄥ叆鍙ｄ氦浜掑眰闃诲锛?    > 159 |         expect(co
+de).toBe(0);
+          |                      ^
+      160 |
+      161 |         // 2. 杈撳嚭涓笉搴斿嚭鐜颁换浣曚氦浜掑紡纭鍏抽敭璇?      162 |         expect(output).not.toMatch(/鏄惁缁х画/);
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:159:22)
+
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-INTERACT-002: 杩滅▼ LLM 閰嶇疆涓?analyze 涓嶅啀鍑虹幇銆屼笂浼犻闄╃‘璁ゃ€嶄氦浜?
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      204 |         const output = stripAnsi((stdout ?? '') + (stderr ?? ''));
+      205 |
+    > 206 |         expect(code).toBe(0);
+          |                      ^
+      207 |         // 涓嶅簲鍑虹幇浠讳綍銆屼笂浼犲埌銆嶃€屾槸鍚︾户缁€嶄箣绫荤殑浜や簰鎻愮ず
+      208 |         expect(output).not.toMatch(/涓婁紶鍒?);
+      209 |         expect(output).not.toMatch(/鏄惁缁х画/);
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:206:22)
+
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-PROG-ETA-001: 杩涘害鏉¤緭鍑轰腑涓嶅簲鍖呭惈 ETA / 鍓╀綑鏃堕棿瀛楁
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      250 |         const output = stripAnsi((stdout ?? '') + (stderr ?? ''));
+      251 |
+    > 252 |         expect(code).toBe(0);
+          |                      ^
+      253 |         expect(output).not.toMatch(/鍓╀綑鏃堕棿/);
+      254 |         expect(output).not.toMatch(/eta/i);
+      255 |       } finally {
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:252:22)
+
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-PROG-CONC-001: concurrency=1 鏃舵瘡涓€屽綋鍓嶅璞°€嶅潡鏈€澶?1 琛?
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      293 |
+      294 |         const output = stripAnsi((stdout ?? '') + (stderr ?? ''));
+    > 295 |         expect(code).toBe(0);
+          |                      ^
+      296 |
+      297 |         const { groups } = extractCurrentObjects(output);
+      298 |         expect(groups.length).toBeGreaterThan(0);
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:295:22)
+
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-PROG-CONC-002: concurrency=3 鏃躲€屽綋鍓嶅璞°€嶅潡鏈€澶?3 琛屼笖璺緞瀛楀吀搴忔帓
+搴?
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      340 |
+      341 |         const output = stripAnsi((stdout ?? '') + (stderr ?? ''));
+    > 342 |         expect(code).toBe(0);
+          |                      ^
+      343 |
+      344 |         const { groups } = extractCurrentObjects(output);
+      345 |         expect(groups.length).toBeGreaterThan(0);
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:342:22)
+
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-PROG-CONC-003: incremental 妯″紡鍚屾牱杈撳嚭銆屽綋鍓嶅璞°€嶅垪琛?
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      414 |
+      415 |         const output = stripAnsi((stdout ?? '') + (stderr ?? ''));
+    > 416 |         expect(code).toBe(0);
+          |                      ^
+      417 |
+      418 |         const { groups } = extractCurrentObjects(output);
+      419 |         expect(groups.length).toBeGreaterThan(0);
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:416:22)
+
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-TOK-001: full 妯″紡涓嬪簲杈撳嚭 Token 琛屼笖 total 鍗曡皟闈為檷
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      456 |
+      457 |         const output = stripAnsi((stdout ?? '') + (stderr ?? ''));
+    > 458 |         expect(code).toBe(0);
+          |                      ^
+      459 |
+      460 |         const snapshots = extractTokenSnapshots(output);
+      461 |         expect(snapshots.length).toBeGreaterThan(0);
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:458:22)
+
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-TOK-002: incremental 妯″紡涔熷簲杈撳嚭 Token 缁熻琛?
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      529 |
+      530 |         const output = stripAnsi((stdout ?? '') + (stderr ?? ''));
+    > 531 |         expect(code).toBe(0);
+          |                      ^
+      532 |
+      533 |         const snapshots = extractTokenSnapshots(output);
+      534 |         expect(snapshots.length).toBeGreaterThan(0);
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:531:22)
+
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-TOK-003: 瑙ｆ瀽缁撴潫鐨勬渶缁堟棩蹇椾腑搴斿寘鍚?Token 浣跨敤姹囨€昏
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      571 |
+      572 |         const output = stripAnsi((stdout ?? '') + (stderr ?? ''));
+    > 573 |         expect(code).toBe(0);
+          |                      ^
+      574 |
+      575 |         expect(output).toMatch(/鏈瑙ｆ瀽鍏辫皟鐢?LLM\s+\d+\s+娆?);
+      576 |         expect(output).toMatch(/杈撳叆 Token:\s*\d+/);
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:573:22)
+
+FAIL tests/system/v25-config-init-and-llm-connect.test.ts (25.078 s)
+  鈼?V2.5 閰嶇疆鍒濆鍖栦笌 LLM 杩炴帴 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/ST-CACHE-LIMIT-*/ST-BLACKLIST-IMG-*) 鈥?ST-CONFIG-INIT-002
+: 鍏?init 鍐?analyze 娴佺▼瀹屾暣閫氳繃
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      91 |     ]);
+      92 |
+    > 93 |     expect(result.code).toBe(0);
+         |                         ^
+      94 |     expect(result.stdout + result.stderr).toContain('瑙ｆ瀽瀹屾垚');
+      95 |
+      96 |     await mock.close();
+
+      at Object.<anonymous> (tests/system/v25-config-init-and-llm-connect.test.ts:93:25)
+
+  鈼?V2.5 閰嶇疆鍒濆鍖栦笌 LLM 杩炴帴 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/ST-CACHE-LIMIT-*/ST-BLACKLIST-IMG-*) 鈥?ST-LLM-CONNECT-003
+: LLM 鏈嶅姟杩斿洖閴存潈/妯″瀷閿欒绛夊紓甯哥姸鎬佸鑷?connect 澶辫触
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "mock server error"
+    Received string:    "LLM 杩炴帴/閰嶇疆鏍￠獙澶辫触: LLM 閰嶇疆涓嶅畬鏁达紝璇峰湪閰嶇疆鏂囦欢鎴栫幆澧冨彉閲忎腑璁剧疆 base_url/api_key/model
+    "
+
+      171 |     expect(result.stderr).toContain('LLM 杩炴帴/閰嶇疆鏍￠獙澶辫触');
+      172 |     // 涓?ST-LLM-CONNECT-002 鍖哄垎锛氭澶?base_url 鍙揪锛宻tderr 涓簲鍖呭惈鏉ヨ嚜 Mock 鏈嶅姟鐨勯敊璇俊鎭?    > 173 |     expect(re
+sult.stderr).toContain('mock server error');
+          |                           ^
+      174 |
+      175 |     await mock.close();
+      176 |     await testProject.cleanup();
+
+      at Object.<anonymous> (tests/system/v25-config-init-and-llm-connect.test.ts:173:27)
+
+  鈼?V2.5 閰嶇疆鍒濆鍖栦笌 LLM 杩炴帴 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/ST-CACHE-LIMIT-*/ST-BLACKLIST-IMG-*) 鈥?ST-CACHE-LIMIT-001
+: 灏忎笂闄愪笅澶氭瑙ｆ瀽瑙﹀彂缂撳瓨娓呯悊浣嗚В鏋愪粛鍙垚鍔?
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      201 |         '-c', configPath,
+      202 |       ]);
+    > 203 |       expect(result.code).toBe(0);
+          |                           ^
+      204 |     }
+      205 |
+      206 |     const exists = await fs.pathExists(cacheDir);
+
+      at Object.<anonymous> (tests/system/v25-config-init-and-llm-connect.test.ts:203:27)
+
+  鈼?V2.5 閰嶇疆鍒濆鍖栦笌 LLM 杩炴帴 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/ST-CACHE-LIMIT-*/ST-BLACKLIST-IMG-*) 鈥?ST-CACHE-LIMIT-002
+: cache_max_size_mb=0 鏃剁鐢ㄧ鐩樼紦瀛橈紝涓嶄骇鐢熶换浣曠紦瀛樻枃浠?
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      252 |         '-c', configPath,
+      253 |       ]);
+    > 254 |       expect(result.code).toBe(0);
+          |                           ^
+      255 |     }
+      256 |
+      257 |     const existsAfter = await fs.pathExists(cacheDir);
+
+      at Object.<anonymous> (tests/system/v25-config-init-and-llm-connect.test.ts:254:27)
+
+  鈼?V2.5 閰嶇疆鍒濆鍖栦笌 LLM 杩炴帴 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/ST-CACHE-LIMIT-*/ST-BLACKLIST-IMG-*) 鈥?ST-BLACKLIST-IMG-0
+01: 榛樿榛戝悕鍗曡繃婊ゅ浘鐗囪祫婧愶紝涓嶇敓鎴?Markdown 涓庣储寮曟潯鐩?
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      308 |     ]);
+      309 |
+    > 310 |     expect(result.code).toBe(0);
+          |                         ^
+      311 |
+      312 |     const resultDir = path.join(projectPath, '.code-analyze-result');
+      313 |     const indexPath = path.join(resultDir, 'analysis-index.json');
+
+      at Object.<anonymous> (tests/system/v25-config-init-and-llm-connect.test.ts:310:25)
+
+  鈼?V2.5 閰嶇疆鍒濆鍖栦笌 LLM 杩炴帴 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/ST-CACHE-LIMIT-*/ST-BLACKLIST-IMG-*) 鈥?ST-BLACKLIST-IMG-0
+02: 閫氳繃 .code-analyze-ignore 瑙ｅ皝閮ㄥ垎鍥剧墖鍚庡彲杩涘叆绱㈠紩/鐢熸垚 Markdown
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      374 |     ]);
+      375 |
+    > 376 |     expect(result.code).toBe(0);
+          |                         ^
+      377 |
+      378 |     const resultDir = path.join(projectPath, '.code-analyze-result');
+      379 |     const indexPath = path.join(resultDir, 'analysis-index.json');
+
+      at Object.<anonymous> (tests/system/v25-config-init-and-llm-connect.test.ts:376:25)
+
+FAIL tests/unit/cli-path.test.ts (20.089 s)
+  鈼?CLI璺緞娴嬭瘯 (UT-CLI-PATH-*) 鈥?UT-CLI-PATH-001: CLI榛樿閰嶇疆璺緞姝ｇ‘锛岀敓鎴愬湪~/.config/code-analyze/config.yaml
+
+    Command failed: node dist/cli.js config --list
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?CLI璺緞娴嬭瘯 (UT-CLI-PATH-*) 鈥?UT-CLI-PATH-002: 榛樿缁撴灉璺緞姝ｇ‘锛屾病鏈変袱绾?code-analyze-result鐩綍
+
+    Command failed: node dist/cli.js analyze --path C:\Users\admin\AppData\Local\Temp\code-analyze-test-project-hNWFCd 
+--mode full --force --no-confirm --llm-base-url http://127.0.0.1:55325/v1 --llm-api-key test --llm-max-retries 0
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?CLI璺緞娴嬭瘯 (UT-CLI-PATH-*) 鈥?UT-CLI-PATH-003: 鑷畾涔塷utput_dir鍙傛暟鐢熸晥
+
+    Command failed: node dist/cli.js analyze --path C:\Users\admin\AppData\Local\Temp\code-analyze-test-project-FvWQZ8 
+--mode full --force --output-dir C:\Users\admin\AppData\Local\Temp\code-analyze-test-project-FvWQZ8\my-custom-result --
+no-confirm --llm-base-url http://127.0.0.1:55337/v1 --llm-api-key test --llm-max-retries 0
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+FAIL tests/system/config.test.ts (9.052 s)
+  鈼?Config System Test (ST-CFG-*) 鈥?ST-CFG-001: 榛樿閰嶇疆璺緞鍦烘櫙娴嬭瘯锛屾湭鎸囧畾-c鍙傛暟鏃堕厤缃敓鎴愬湪姝ｇ‘浣嶇疆
+
+    Command failed: node C:\Software\project\skills-any-code\dist\cli.js analyze --force --no-confirm --llm-base-url ht
+tp://127.0.0.1:55346/v1 --llm-api-key test --llm-max-retries 0
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?Config System Test (ST-CFG-*) 鈥?ST-CFG-002: 鑷畾涔夐厤缃矾寰勫弬鏁扮敓鏁?
+    Command failed: node C:\Software\project\skills-any-code\dist\cli.js config --set global.log_level=debug -c C:\User
+s\admin\AppData\Local\Temp\code-analyze-test-st-project-uxp1Yz\my-config.yaml
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-st-project-uxp1Y
+z\my-config.yaml
+
+
+
+FAIL tests/integration/cli/markdown-structure-ch13.test.ts (9.241 s)
+  鈼?13.3 鐩綍绾?Markdown 鍔熻兘鎻忚堪 (ST-DIR-MD-CONTENT-001) 鈥?ST-DIR-MD-CONTENT-001: 鐩綍鍔熻兘鎻忚堪鍐呭璐ㄩ噺锛岄暱搴︿笌鍏抽敭璇嶈姹?
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-dir-md-177371536690
+6-arh951" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55363/v1 --llm-api-key test --llm-max-retries
+ 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?13.4 鏂囦欢/鐩綍鍛藉悕鍐茬獊 (ST-PATH-CONFLICT-INDEX-001) 鈥?ST-PATH-CONFLICT-INDEX-001: index 鏂囦欢涓庣洰褰曠粨鏋滃叡瀛橈紝浜掍笉瑕嗙洊
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-index-conflict-1773
+715371522-xdwrcf" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55372/v1 --llm-api-key test --llm-max
+-retries 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+FAIL tests/integration/cli/progress.test.ts (5.631 s)
+  鈼?12.3.1 杩涘害鏉′笌瀵硅薄绾ц繘搴?(UT-TERM-001 / ST-V22-PROG-001) 鈥?UT-TERM-001: 杩涘害鏉″湪瑙ｆ瀽杩囩▼涓嚦灏戝嚭鐜?2 娆′笉鍚屾暟鍊硷紝鎬诲璞℃暟鍚堢悊锛屾渶缁堟枃浠
+舵暟姝ｇ‘
+
+    expect(received).toBeGreaterThanOrEqual(expected)
+
+    Expected: >= 2
+    Received:    0
+
+      75 |     // 1锛夊繀椤昏兘瑙ｆ瀽鍑鸿嚦灏戜袱鏉¤繘搴︿俊鎭紙杩涘害鍦ㄨВ鏋愯繃绋嬩腑鏈夋洿鏂帮級
+      76 |     const progressSeq = parseProgressLines(combined);
+    > 77 |     expect(progressSeq.length).toBeGreaterThanOrEqual(2);
+         |                                ^
+      78 |
+      79 |     // 2锛夋€诲璞℃暟鑷冲皯瑕嗙洊 5 涓枃浠讹紙鐩綍+鏂囦欢鎬绘暟搴旀槑鏄惧ぇ浜庢枃浠舵暟锛?      80 |     expect(progressSeq[0].total).toBeGreat
+erThanOrEqual(5);
+
+      at Object.<anonymous> (tests/integration/cli/progress.test.ts:77:32)
+
+  鈼?12.3.1 杩涘害鏉′笌瀵硅薄绾ц繘搴?(UT-TERM-001 / ST-V22-PROG-001) 鈥?ST-V22-PROG-001: 灏忓瀷椤圭洰鎬诲璞℃暟=鐩綍+鏂囦欢锛岃繘搴﹀崟璋冨鑷冲畬鎴愶紝鍏卞垎鏋?3 涓
+枃浠?
+    expect(received).toBeGreaterThanOrEqual(expected)
+
+    Expected: >= 1
+    Received:    0
+
+      115 |
+      116 |     // 鑷冲皯鏈変竴鏉¤繘搴︿俊鎭紝涓旀渶缁?done=total
+    > 117 |     expect(progressSeq.length).toBeGreaterThanOrEqual(1);
+          |                                ^
+      118 |     expect(progressSeq[0].total).toBeGreaterThanOrEqual(4);
+      119 |     const last = progressSeq[progressSeq.length - 1];
+      120 |     expect(last.done).toBe(last.total);
+
+      at Object.<anonymous> (tests/integration/cli/progress.test.ts:117:32)
+
+FAIL tests/system/v22-root-and-flow.test.ts (6.427 s)
+  鈼?V2.2 鏍圭洰褰曚笌鏁翠綋琛屼负 (ST-V22-ROOT) 鈥?ST-V22-ROOT-001: 鍏ㄩ噺瑙ｆ瀽鍚庝笉鐢熸垚 PROJECT_SUMMARY.md锛屾牴鐩綍浠?index.md 琛ㄧず
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-v22-root-1773715381
+864-822z35" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55393/v1 --llm-api-key test --llm-max-retri
+es 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?V2.2 鏍圭洰褰曚笌鏁翠綋琛屼负 (ST-V22-ROOT) 鈥?ST-V22-ROOT-002: 涓嶇敓鎴?ANALYSIS_MODIFICATION_LOG.md
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-v22-root-1773715382
+775-vkj5wo" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55395/v1 --llm-api-key test --llm-max-retri
+es 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?V2.2 鏍圭洰褰曚笌鏁翠綋琛屼负 (ST-V22-ROOT) 鈥?UT-V23-INDEX-001: 鍏ㄩ噺瑙ｆ瀽鍚庡簲鐢熸垚 analysis-index.json
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-v22-root-1773715383
+683-z26xt3" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55397/v1 --llm-api-key test --llm-max-retri
+es 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+FAIL tests/integration/cli/result-integrity.test.ts (5.446 s)
+  鈼?12.3.2 鏂囦欢绾т笌鐩綍绾х粨鏋滃畬鏁存€?(ST-RESULT-FILE-001 / ST-RESULT-DIR-001) 鈥?ST-RESULT-FILE-001: 澶氱骇鐩綍涓嬫瘡涓唬鐮佹枃浠跺潎鏈夊搴?.md
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      63 |
+      64 |     const resultRoot = path.join(testDir, '.code-analyze-result');
+    > 65 |     expect(await fs.pathExists(resultRoot)).toBe(true);
+         |                                             ^
+      66 |
+      67 |     const helloMd = path.join(resultRoot, 'src/main/java/pkg/Hello.md');
+      68 |     const utilMd = path.join(resultRoot, 'src/main/java/pkg/Util.md');
+
+      at Object.<anonymous> (tests/integration/cli/result-integrity.test.ts:65:45)
+
+  鈼?12.3.2 鏂囦欢绾т笌鐩綍绾х粨鏋滃畬鏁存€?(ST-RESULT-FILE-001 / ST-RESULT-DIR-001) 鈥?ST-RESULT-DIR-001: 鐩綍 index.md 鍐呭鏈夋剰涔夛紝鏂囦欢鏁?
+瀛愮洰褰曟暟涓庡疄闄呬竴鑷?
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-result-integrity-17
+73715389065-eqc1dq" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55404/v1 --llm-api-key test --llm-m
+ax-retries 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+FAIL tests/integration/llm/partial-fail.test.ts
+  鈼?12.3.4 LLM 閮ㄥ垎澶辫触璺緞 (ST-LLM-PARTIAL-FAIL-001) 鈥?ST-LLM-PARTIAL-FAIL-001: 閮ㄥ垎澶辫触鏃跺凡鎴愬姛鏂囦欢鍐欏叆姝ｇ‘锛屽け璐ユ枃浠舵棤 .md锛岄敊璇俊鎭
+瓨鍦?
+    expect(received).toBeGreaterThanOrEqual(expected)
+
+    Expected: >= 2
+    Received:    0
+
+      72 |
+      73 |     const successCount = [oneExists, twoExists, threeExists].filter(Boolean).length;
+    > 74 |     expect(successCount).toBeGreaterThanOrEqual(2);
+         |                          ^
+      75 |     expect(successCount).toBeLessThanOrEqual(3);
+      76 |     // 閮ㄥ垎澶辫触鏃?CLI 搴旈€€鍑虹爜 1锛涜嫢 Mock 鏈懡涓枃浠惰姹傚垯鍙兘 exit 0
+      77 |     if (successCount === 2) {
+
+      at Object.<anonymous> (tests/integration/llm/partial-fail.test.ts:74:26)
+
+FAIL tests/integration/llm/v24-token-retry.test.ts
+  鈼?ST-V24-TOK-004: LLM 閲嶈瘯鍦烘櫙涓?Token 缁熻鍚堢悊鎬?鈥?ST-V24-TOK-004: 鍗曟澶辫触鍚庨噸璇曟垚鍔熸椂锛屼粎缁熻鎴愬姛璋冪敤鐨?Token
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-tok-retry-vJkFyv" -
+-mode full --force --no-skills --llm-base-url http://127.0.0.1:55412/v1 --llm-api-key test --llm-max-retries 1 --no-con
+firm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+FAIL tests/system/full-analysis.test.ts
+  鈼?Console
+
+    console.log
+      [INFO] 浣跨敤瑙ｆ瀽妯″紡锛歠ull
+
+      at Logger.info (src/common/logger.ts:31:15)
+
+    console.log
+      [INFO] 浣跨敤瑙ｆ瀽妯″紡锛歠ull
+
+      at Logger.info (src/common/logger.ts:31:15)
+
+    console.log
+      [INFO] 寮€濮嬫墽琛屽叏閲忚В鏋?..
+
+      at Logger.info (src/common/logger.ts:31:15)
+
+    console.log
+      [INFO] 浣跨敤瑙ｆ瀽妯″紡锛歠ull
+
+      at Logger.info (src/common/logger.ts:31:15)
+
+    console.log
+      [INFO] 寮€濮嬫墽琛屽叏閲忚В鏋?..
+
+      at Logger.info (src/common/logger.ts:31:15)
+
+  鈼?System test: V2.1 LLM鍘熺敓瑙ｆ瀽锛圫T-FULL-* / ST-INC-* 鍏抽敭鍦烘櫙锛?鈥?ST-FULL-007/008/009/010: 澶氳瑷€/鏃犲悗缂€/闈炴爣鍑嗗悗缂€/缃曡璇█鍧囧彲瑙
+ｆ瀽
+
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at AnalysisAppService.runAnalysis (src/application/analysis.app.service.ts:80:19)
+      at Object.<anonymous> (tests/system/full-analysis.test.ts:19:19)
+
+FAIL tests/integration/module-interaction.test.ts
+  鈼?Console
+
+    console.log
+      [INFO] 浣跨敤瑙ｆ瀽妯″紡锛歠ull
+
+      at Logger.info (src/common/logger.ts:31:15)
+
+  鈼?Module interaction integration test锛圴2.1锛?鈥?AnalysisAppService: 娉ㄥ叆llmConfig鍚庡彲瀹屾垚鍏ㄩ噺瑙ｆ瀽锛堜笉鍑虹綉锛?
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at AnalysisAppService.runAnalysis (src/application/analysis.app.service.ts:80:19)
+      at Object.<anonymous> (tests/integration/module-interaction.test.ts:48:19)
+
+FAIL tests/integration/config-path.test.ts
+  鈼?Config Path Integration Test (INT-CFG-*) 鈥?INT-CFG-001: 閰嶇疆鏂囦欢鑷姩鐢熸垚鍦ㄧ敤鎴风洰褰曡€岄潪椤圭洰鐩綍
+
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-int-config\.config\code-analyze\config.y
+aml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/integration/config-path.test.ts:45:5)
+
+  鈼?Config Path Integration Test (INT-CFG-*) 鈥?INT-CFG-002: CLI榛樿閰嶇疆璺緞姝ｇ‘瑙ｆ瀽
+
+    Command failed: node C:\Software\project\skills-any-code\dist\cli.js config --list
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+FAIL tests/unit/cache/file-hash-cache.test.ts
+  鈼?FileHashCache with max size (UT-CACHE-001~003) 鈥?UT-CACHE-002: 瓒呰繃涓婇檺鏃舵寜 mtime 浠庢棫鍒版柊鍒犻櫎
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      46 |     const aExists = await fs.pathExists(fileA);
+      47 |     const bExists = await fs.pathExists(fileB);
+    > 48 |     expect(aExists).toBe(false);
+         |                     ^
+      49 |     expect(bExists).toBe(true);
+      50 |   });
+      51 |
+
+      at Object.<anonymous> (tests/unit/cache/file-hash-cache.test.ts:48:21)
+
+  鈼?FileHashCache with max size (UT-CACHE-001~003) 鈥?UT-CACHE-003: 鍒犻櫎缂撳瓨鏂囦欢澶辫触鏃惰褰?warning 浣嗕笉鎶涘紓甯?
+    TypeError: Cannot redefine property: remove
+        at Object.defineProperty (<anonymous>)
+
+      57 |
+      58 |     const spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    > 59 |     jest.spyOn(fs, 'remove').mockImplementationOnce(() => {
+         |          ^
+      60 |       throw new Error('mock unlink error');
+      61 |     });
+      62 |
+
+      at ModuleMocker.spyOn (node_modules/jest-mock/build/index.js:776:16)
+      at Object.<anonymous> (tests/unit/cache/file-hash-cache.test.ts:59:10)
+
+FAIL tests/unit/config.test.ts
+  鈼?ConfigManager 閰嶇疆璺緞娴嬭瘯 (UT-CFG-*) 鈥?UT-CFG-001: 閰嶇疆璺緞娉㈡氮鍙峰睍寮€娴嬭瘯锛岄獙璇亊璺緞姝ｇ‘瑙ｆ瀽涓虹敤鎴穐ome鐩綍
+
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-config\.test-config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/config.test.ts:34:5)
+
+  鈼?ConfigManager 閰嶇疆璺緞娴嬭瘯 (UT-CFG-*) 鈥?UT-CFG-002: 閰嶇疆璺緞浼樺厛绾ф祴璇曪紝楠岃瘉CLI鍙傛暟浼樺厛绾ч珮浜庡唴閮ㄩ粯璁よ矾寰?
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-config\custom-config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/config.test.ts:45:5)
+
+  鈼?ConfigManager 閰嶇疆璺緞娴嬭瘯 (UT-CFG-*) 鈥?UT-CFG-003: 涓嶄紶鍏ヨ嚜瀹氫箟璺緞鏃朵娇鐢ㄩ粯璁ら厤缃矾寰?
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-config\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/config.test.ts:58:5)
+
+  鈼?ConfigManager 閰嶇疆璺緞娴嬭瘯 (UT-CFG-*) 鈥?UT-CFG-004: Windows鐜涓婾SERPROFILE鐜鍙橀噺浼樺厛绾ф祴璇?
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-config\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/config.test.ts:71:5)
+
+  鈼?ConfigManager 閰嶇疆璺緞娴嬭瘯 (UT-CFG-*) 鈥?UT-V23-CFG-001: skills.default_providers 榛樿鍊煎簲鍖呭惈 opencode,cursor,claude,code
+x
+
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-config\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/config.test.ts:143:5)
+
+  鈼?ConfigManager 閰嶇疆璺緞娴嬭瘯 (UT-CFG-*) 鈥?UT-V23-CFG-002: analyze.blacklist 榛樿鍊煎簲涓烘暟缁勪笖鍖呭惈甯哥敤妯″紡
+
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-config\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/config.test.ts:153:5)
+
+  鈼?ConfigManager 閰嶇疆璺緞娴嬭瘯 (UT-CFG-*) 鈥?UT-V23-CFG-006: 瀹屾暣閰嶇疆搴斿寘鍚?global銆乤nalyze銆乻kills銆乴lm 涓?analyze 鍚?blacklist
+
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-config\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/config.test.ts:161:5)
+
+FAIL tests/unit/cli-config-path.test.ts
+  鈼?CLI榛樿閰嶇疆璺緞娴嬭瘯 (UT-CLI-CFG-*) 鈥?UT-CLI-CFG-002: CLI榛樿閰嶇疆璺緞灞曞紑姝ｇ‘
+
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-cli-config\.config\code-analyze\config.y
+aml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/cli-config-path.test.ts:34:5)
+
+FAIL tests/unit/llm/llm.config.test.ts
+  鈼?LLM 閰嶇疆娴嬭瘯 鈥?UT-LLM-003: temperature鍙傛暟瓒呭嚭鑼冨洿鏃舵牎楠屽け璐?
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/llm/llm.config.test.ts:85:5)
+
+FAIL tests/integration/cli/analyze.test.ts (13.716 s)
+  鈼?CLI 澶氳瑷€瑙ｆ瀽娴嬭瘯 (UT-CLI-*) 鈥?UT-CLI-011: 澶氳瑷€椤圭洰CLI瑙ｆ瀽鎴愬姛锛屾枃浠惰鏁版纭紝姣忎釜婧愭枃浠跺潎鏈夊搴?.md
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-test-G6BCal" --mode
+ full --force --log-level info --llm-base-url http://127.0.0.1:55434/v1 --llm-api-key test --llm-max-retries 0 --no-con
+firm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?CLI 澶氳瑷€瑙ｆ瀽娴嬭瘯 (UT-CLI-*) 鈥?ST-V23-INDEX-INTEGRITY-001: 绱㈠紩 entries 涓?file/directory 鏁伴噺涓?resultPath 瀵瑰簲 .md 鍧囧瓨鍦?
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-test-4IKe83" --mode
+ full --force --llm-base-url http://127.0.0.1:55440/v1 --llm-api-key test --llm-max-retries 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?CLI 澶氳瑷€瑙ｆ瀽娴嬭瘯 (UT-CLI-*) 鈥?UT-CLI-012: 鏃犲悗缂€鏂囦欢CLI瑙ｆ瀽鎴愬姛锛屼笉琚烦杩?
+    Command failed: node dist/cli.js analyze --path C:\Users\admin\AppData\Local\Temp\code-analyze-test-Oi86IV --mode f
+ull --force --log-level info --llm-base-url http://127.0.0.1:55447/v1 --llm-api-key test --llm-max-retries 0 --no-confi
+rm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+FAIL tests/integration/cli/skill-deploy.test.ts (8.082 s)
+  鈼?Skill 閮ㄧ讲闆嗘垚娴嬭瘯 (V23-SKILL) 鈥?UT-V23-SKILL-001: 榛樿 providers 涓嬪簲鐢熸垚 .agents/skills/code-query 鍜?.claude/skills/cod
+e-query
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-skill-1773715420175
+-z3d8kk" --mode full --force --llm-base-url http://127.0.0.1:55462/v1 --llm-api-key test --llm-max-retries 0 --no-confi
+rm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?Skill 閮ㄧ讲闆嗘垚娴嬭瘯 (V23-SKILL) 鈥?UT-V23-SKILL-002: SKILL.md 搴斿寘鍚?name/code-query銆乨escription銆乧ompatibility 鍙婃鏂囩珷鑺?
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-skill-1773715421072
+-js4176" --mode full --force --llm-base-url http://127.0.0.1:55464/v1 --llm-api-key test --llm-max-retries 0 --no-confi
+rm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?Skill 閮ㄧ讲闆嗘垚娴嬭瘯 (V23-SKILL) 鈥?UT-V23-SKILL-003: resolve-config.json 搴斿寘鍚?indexFilePath 涓旀寚鍚戝瓨鍦ㄦ枃浠?
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-skill-1773715421956
+-feq52t" --mode full --force --llm-base-url http://127.0.0.1:55466/v1 --llm-api-key test --llm-max-retries 0 --no-confi
+rm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?Skill 閮ㄧ讲闆嗘垚娴嬭瘯 (V23-SKILL) 鈥?UT-V23-SKILL-007: --no-skills 搴斾笉鐢熸垚 Skill 鐩綍
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-skill-1773715422834
+-zwfn0f" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55469/v1 --llm-api-key test --llm-max-retries 
+0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?Skill 閮ㄧ讲闆嗘垚娴嬭瘯 (V23-SKILL) 鈥?UT-V23-SCRIPT-001/008: 鐙珛鑴氭湰鏌ヨ涓?CLI resolve 杈撳嚭涓€鑷?
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-skill-1773715423782
+-ia3drp" --mode full --force --llm-base-url http://127.0.0.1:55470/v1 --llm-api-key test --llm-max-retries 0 --no-confi
+rm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+FAIL tests/unit/parser.test.ts (7.275 s)
+  鈼?Console
+
+    console.log
+      [INFO] 浣跨敤瑙ｆ瀽妯″紡锛歠ull
+
+      at Logger.info (src/common/logger.ts:31:15)
+
+  鈼?LLM 鍘熺敓瑙ｆ瀽瑕嗙洊锛堟浛浠ｆ棫 ParserRegistry锛?鈥?UT-PARSE-006/009(瑕嗙洊): 浠绘剰鍚庣紑/鏃犲悗缂€鏂囨湰鏂囦欢閮戒細杩涘叆LLM瑙ｆ瀽娴佺▼
+
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at AnalysisAppService.runAnalysis (src/application/analysis.app.service.ts:80:19)
+      at Object.<anonymous> (tests/unit/parser.test.ts:58:22)
+
+FAIL tests/integration/cli/resolve.test.ts (6.926 s)
+  鈼?CLI resolve 闆嗘垚娴嬭瘯 (V23) 鈥?UT-V23-RESOLVE-001: 瑙ｆ瀽鍚?resolve 搴旇繑鍥炲搴?Markdown 璺緞
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-resolve-int-1773715
+436027-2wld84" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55491/v1 --llm-api-key test --llm-max-re
+tries 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?CLI resolve 闆嗘垚娴嬭瘯 (V23) 鈥?UT-V23-RESOLVE-003: 涓嶅瓨鍦ㄧ殑璺緞搴旇緭鍑?N/A
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-resolve-int-1773715
+436975-33g3gd" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55494/v1 --llm-api-key test --llm-max-re
+tries 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?CLI resolve 闆嗘垚娴嬭瘯 (V23) 鈥?UT-V23-RESOLVE-004: 绱㈠紩涓嶅瓨鍦ㄦ椂 resolve 杩斿洖 N/A锛堝綋鍓嶅疄鐜颁负 exit 0 + N/A锛?
+    Command failed: node dist/cli.js resolve "C:/Users/admin/AppData/Local/Temp/code-analyze-resolve-int-1773715437914-
+wacalw/src/index.ts" --project "C:\Users\admin\AppData\Local\Temp\code-analyze-resolve-int-1773715437914-wacalw"
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+PASS tests/unit/command.test.ts
+  鈼?Console
+
+    console.warn
+      Failed to load LLM config from priv_data, tests may fail: Error: ENOENT: no such file or directory, open 'C:\Soft
+ware\project\skills-any-code\tests\priv_data\api_key.txt'
+          at open (node:internal/fs/promises:637:25)
+          at Object.readFile (node:internal/fs/promises:1269:14)
+          at Object.<anonymous> (C:\Software\project\skills-any-code\tests\utils\test-helpers.ts:24:21) {
+        errno: -4058,
+        code: 'ENOENT',
+        syscall: 'open',
+        path: 'C:\\Software\\project\\skills-any-code\\tests\\priv_data\\api_key.txt'
+      }
+
+      42 |     if (llmConfig.model) process.env.CODE_ANALYZE_LLM_MODEL = llmConfig.model;
+      43 |    } catch (error) {
+    > 44 |      console.warn('Failed to load LLM config from priv_data, tests may fail:', error);
+         |              ^
+      45 |    }
+      46 |  });
+      47 |
+
+      at Object.<anonymous> (tests/utils/test-helpers.ts:44:14)
+
+PASS tests/unit/index/analysis-index.test.ts
+PASS tests/unit/cli/resolve.test.ts
+PASS tests/e2e/e2e-env.test.ts
+PASS tests/unit/filter/blacklist-filter.test.ts
+PASS tests/unit/markdown-structure.test.ts
+PASS tests/unit/storage-path.test.ts
+PASS tests/unit/llm/file.splitter.test.ts
+PASS tests/unit/scripts/resolve-script.test.ts
+PASS tests/unit/services/incremental.test.ts
+FAIL tests/unit/llm/openai-client-connect.test.ts
+  鈼?Test suite failed to run
+
+    [96mtests/unit/llm/openai-client-connect.test.ts[0m:[93m73[0m:[93m1[0m - [91merror[0m[90m TS1005: [0m')' 
+expected.
+
+    [7m73[0m 
+    [7m  [0m [91m[0m
+
+FAIL tests/unit/llm/llm.security.test.ts
+  鈼?Test suite failed to run
+
+    [96mtests/unit/llm/llm.security.test.ts[0m:[93m31[0m:[93m37[0m - [91merror[0m[90m TS2345: [0mArgument of 
+type 'string' is not assignable to parameter of type 'FileHashCacheOptions'.
+
+    [7m31[0m     const cache = new FileHashCache('C:\\\\temp\\\\code-analyze-test-cache');
+    [7m  [0m [91m                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [96mtests/unit/llm/llm.security.test.ts[0m:[93m57[0m:[93m23[0m - [91merror[0m[90m TS2339: [0mProperty 'ge
+tStats' does not exist on type 'LLMAnalysisService'.
+
+    [7m57[0m     const stats = svc.getStats();
+    [7m  [0m [91m                      ~~~~~~~~[0m
+
+FAIL tests/unit/llm/llm.error-handler.test.ts
+  鈼?Test suite failed to run
+
+    [96mtests/unit/llm/llm.error-handler.test.ts[0m:[93m24[0m:[93m37[0m - [91merror[0m[90m TS2345: [0mArgumen
+t of type '{ base_url: string; api_key: string; model: string; temperature: number; max_tokens: number; timeout: number
+; max_retries: number; retry_delay: number; context_window_size: number; cache_enabled: true; cache_dir: string; }' is 
+not assignable to parameter of type 'LLMConfig'.
+      Property 'cache_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature:
+ number; max_tokens: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; ca
+che_enabled: true; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m 24[0m     const client = new OpenAIClient({
+    [7m   [0m [91m                                    ~[0m
+    [7m 25[0m       base_url: 'http://127.0.0.1:12345/v1',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m...[0m 
+    [7m 35[0m       cache_dir: './.cache',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m 36[0m     });
+    [7m   [0m [91m~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+    [96mtests/unit/llm/llm.error-handler.test.ts[0m:[93m54[0m:[93m37[0m - [91merror[0m[90m TS2345: [0mArgumen
+t of type '{ base_url: string; api_key: string; model: string; temperature: number; max_tokens: number; timeout: number
+; max_retries: number; retry_delay: number; context_window_size: number; cache_enabled: true; cache_dir: string; }' is 
+not assignable to parameter of type 'LLMConfig'.
+      Property 'cache_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature:
+ number; max_tokens: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; ca
+che_enabled: true; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m 54[0m     const client = new OpenAIClient({
+    [7m   [0m [91m                                    ~[0m
+    [7m 55[0m       base_url: 'http://127.0.0.1:12345/v1',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m...[0m 
+    [7m 65[0m       cache_dir: './.cache',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m 66[0m     });
+    [7m   [0m [91m~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+
+FAIL tests/unit/llm/llm.client.test.ts
+  鈼?Test suite failed to run
+
+    [96mtests/unit/llm/llm.client.test.ts[0m:[93m47[0m:[93m37[0m - [91merror[0m[90m TS2345: [0mArgument of ty
+pe '{ base_url: string; api_key: string; model: string; temperature: number; max_tokens: number; timeout: number; max_r
+etries: number; retry_delay: number; context_window_size: number; cache_enabled: true; cache_dir: string; }' is not ass
+ignable to parameter of type 'LLMConfig'.
+      Property 'cache_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature:
+ number; max_tokens: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; ca
+che_enabled: true; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m 47[0m     const client = new OpenAIClient({
+    [7m   [0m [91m                                    ~[0m
+    [7m 48[0m       base_url: 'http://127.0.0.1:12345/v1',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m...[0m 
+    [7m 58[0m       cache_dir: './.cache',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m 59[0m     });
+    [7m   [0m [91m~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+    [96mtests/unit/llm/llm.client.test.ts[0m:[93m72[0m:[93m37[0m - [91merror[0m[90m TS2345: [0mArgument of ty
+pe '{ base_url: string; api_key: string; model: string; temperature: number; max_tokens: number; timeout: number; max_r
+etries: number; retry_delay: number; context_window_size: number; cache_enabled: true; cache_dir: string; }' is not ass
+ignable to parameter of type 'LLMConfig'.
+      Property 'cache_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature:
+ number; max_tokens: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; ca
+che_enabled: true; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m 72[0m     const client = new OpenAIClient({
+    [7m   [0m [91m                                    ~[0m
+    [7m 73[0m       base_url: 'http://127.0.0.1:12345/v1',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m...[0m 
+    [7m 83[0m       cache_dir: './.cache',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m 84[0m     });
+    [7m   [0m [91m~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+    [96mtests/unit/llm/llm.client.test.ts[0m:[93m97[0m:[93m37[0m - [91merror[0m[90m TS2345: [0mArgument of ty
+pe '{ base_url: string; api_key: string; model: string; temperature: number; max_tokens: number; timeout: number; max_r
+etries: number; retry_delay: number; context_window_size: number; cache_enabled: true; cache_dir: string; }' is not ass
+ignable to parameter of type 'LLMConfig'.
+      Property 'cache_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature:
+ number; max_tokens: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; ca
+che_enabled: true; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m 97[0m     const client = new OpenAIClient({
+    [7m   [0m [91m                                    ~[0m
+    [7m 98[0m       base_url: 'http://127.0.0.1:12345/v1',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m...[0m 
+    [7m108[0m       cache_dir: './.cache',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m109[0m     });
+    [7m   [0m [91m~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+
+FAIL tests/unit/llm/analysis.cache.test.ts
+  鈼?Test suite failed to run
+
+    [96mtests/unit/llm/analysis.cache.test.ts[0m:[93m31[0m:[93m31[0m - [91merror[0m[90m TS2345: [0mArgument o
+f type 'string' is not assignable to parameter of type 'FileHashCacheOptions'.
+
+    [7m31[0m     cache = new FileHashCache(cacheDir);
+    [7m  [0m [91m                              ~~~~~~~~[0m
+
+FAIL tests/unit/services/analysis.test.ts
+  鈼?Test suite failed to run
+
+    [96mtests/unit/services/analysis.test.ts[0m:[93m53[0m:[93m7[0m - [91merror[0m[90m TS2345: [0mArgument of 
+type '{ base_url: string; api_key: string; model: string; temperature: number; max_tokens: number; timeout: number; max
+_retries: number; retry_delay: number; context_window_size: number; cache_enabled: false; cache_dir: string; }' is not 
+assignable to parameter of type 'LLMConfig'.
+      Property 'cache_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature:
+ number; max_tokens: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; ca
+che_enabled: false; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m 53[0m       {
+    [7m   [0m [91m      ~[0m
+    [7m 54[0m         base_url: 'http://127.0.0.1:12345/v1',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m...[0m 
+    [7m 64[0m         cache_dir: path.join(testProjectRoot, '.cache'),
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m 65[0m       }
+    [7m   [0m [91m~~~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+
+FAIL tests/integration/full-process.test.ts
+  鈼?Test suite failed to run
+
+    [96mtests/integration/full-process.test.ts[0m:[93m30[0m:[93m7[0m - [91merror[0m[90m TS2741: [0mProperty '
+cache_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature: number; max_tok
+ens: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; cache_enabled: fal
+se; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m30[0m       llmConfig: {
+    [7m  [0m [91m      ~~~~~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+      [96msrc/common/types.ts[0m:[93m216[0m:[93m3[0m
+        [7m216[0m   llmConfig?: LLMConfig
+        [7m   [0m [96m  ~~~~~~~~~[0m
+        The expected type comes from property 'llmConfig' which is declared here on type 'AnalyzeProjectCommandParams &
+ { outputDir?: string | undefined; }'
+
+Summary of all failing tests
+FAIL tests/performance/benchmark.test.ts
+  鈼?Test suite failed to run
+
+    [96mtests/performance/benchmark.test.ts[0m:[93m33[0m:[93m9[0m - [91merror[0m[90m TS2741: [0mProperty 'cac
+he_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature: number; max_tokens
+: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; cache_enabled: false;
+ cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m33[0m         llmConfig: {
+    [7m  [0m [91m        ~~~~~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+      [96msrc/common/types.ts[0m:[93m216[0m:[93m3[0m
+        [7m216[0m   llmConfig?: LLMConfig
+        [7m   [0m [96m  ~~~~~~~~~[0m
+        The expected type comes from property 'llmConfig' which is declared here on type 'AnalyzeProjectCommandParams &
+ { outputDir?: string | undefined; }'
+    [96mtests/performance/benchmark.test.ts[0m:[93m77[0m:[93m7[0m - [91merror[0m[90m TS2741: [0mProperty 'cac
+he_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature: number; max_tokens
+: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; cache_enabled: false;
+ cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m77[0m       llmConfig: {
+    [7m  [0m [91m      ~~~~~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+      [96msrc/common/types.ts[0m:[93m216[0m:[93m3[0m
+        [7m216[0m   llmConfig?: LLMConfig
+        [7m   [0m [96m  ~~~~~~~~~[0m
+        The expected type comes from property 'llmConfig' which is declared here on type 'AnalyzeProjectCommandParams &
+ { outputDir?: string | undefined; }'
+    [96mtests/performance/benchmark.test.ts[0m:[93m106[0m:[93m7[0m - [91merror[0m[90m TS2741: [0mProperty 'ca
+che_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature: number; max_token
+s: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; cache_enabled: false
+; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m106[0m       llmConfig: {
+    [7m   [0m [91m      ~~~~~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+      [96msrc/common/types.ts[0m:[93m216[0m:[93m3[0m
+        [7m216[0m   llmConfig?: LLMConfig
+        [7m   [0m [96m  ~~~~~~~~~[0m
+        The expected type comes from property 'llmConfig' which is declared here on type 'AnalyzeProjectCommandParams &
+ { outputDir?: string | undefined; }'
+    [96mtests/performance/benchmark.test.ts[0m:[93m147[0m:[93m9[0m - [91merror[0m[90m TS2741: [0mProperty 'ca
+che_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature: number; max_token
+s: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; cache_enabled: false
+; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m147[0m         llmConfig: {
+    [7m   [0m [91m        ~~~~~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+      [96msrc/common/types.ts[0m:[93m216[0m:[93m3[0m
+        [7m216[0m   llmConfig?: LLMConfig
+        [7m   [0m [96m  ~~~~~~~~~[0m
+        The expected type comes from property 'llmConfig' which is declared here on type 'AnalyzeProjectCommandParams &
+ { outputDir?: string | undefined; }'
+
+FAIL tests/system/v24-cli-interaction-and-progress.test.ts (31.234 s)
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-INTERACT-001: Git + 鏈彁浜ゅ彉鏇存椂 analyze 涓嶅啀寮瑰嚭纭鎻愮ず
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      157 |
+      158 |         // 1. 杩涚▼搴旀甯哥粨鏉燂紙鎸夌収 V2.4 鐩爣璇箟锛孋LI 涓嶅啀鍥犱负 dirty+auto 鍦ㄥ叆鍙ｄ氦浜掑眰闃诲锛?    > 159 |         expect(co
+de).toBe(0);
+          |                      ^
+      160 |
+      161 |         // 2. 杈撳嚭涓笉搴斿嚭鐜颁换浣曚氦浜掑紡纭鍏抽敭璇?      162 |         expect(output).not.toMatch(/鏄惁缁х画/);
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:159:22)
+
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-INTERACT-002: 杩滅▼ LLM 閰嶇疆涓?analyze 涓嶅啀鍑虹幇銆屼笂浼犻闄╃‘璁ゃ€嶄氦浜?
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      204 |         const output = stripAnsi((stdout ?? '') + (stderr ?? ''));
+      205 |
+    > 206 |         expect(code).toBe(0);
+          |                      ^
+      207 |         // 涓嶅簲鍑虹幇浠讳綍銆屼笂浼犲埌銆嶃€屾槸鍚︾户缁€嶄箣绫荤殑浜や簰鎻愮ず
+      208 |         expect(output).not.toMatch(/涓婁紶鍒?);
+      209 |         expect(output).not.toMatch(/鏄惁缁х画/);
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:206:22)
+
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-PROG-ETA-001: 杩涘害鏉¤緭鍑轰腑涓嶅簲鍖呭惈 ETA / 鍓╀綑鏃堕棿瀛楁
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      250 |         const output = stripAnsi((stdout ?? '') + (stderr ?? ''));
+      251 |
+    > 252 |         expect(code).toBe(0);
+          |                      ^
+      253 |         expect(output).not.toMatch(/鍓╀綑鏃堕棿/);
+      254 |         expect(output).not.toMatch(/eta/i);
+      255 |       } finally {
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:252:22)
+
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-PROG-CONC-001: concurrency=1 鏃舵瘡涓€屽綋鍓嶅璞°€嶅潡鏈€澶?1 琛?
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      293 |
+      294 |         const output = stripAnsi((stdout ?? '') + (stderr ?? ''));
+    > 295 |         expect(code).toBe(0);
+          |                      ^
+      296 |
+      297 |         const { groups } = extractCurrentObjects(output);
+      298 |         expect(groups.length).toBeGreaterThan(0);
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:295:22)
+
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-PROG-CONC-002: concurrency=3 鏃躲€屽綋鍓嶅璞°€嶅潡鏈€澶?3 琛屼笖璺緞瀛楀吀搴忔帓
+搴?
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      340 |
+      341 |         const output = stripAnsi((stdout ?? '') + (stderr ?? ''));
+    > 342 |         expect(code).toBe(0);
+          |                      ^
+      343 |
+      344 |         const { groups } = extractCurrentObjects(output);
+      345 |         expect(groups.length).toBeGreaterThan(0);
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:342:22)
+
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-PROG-CONC-003: incremental 妯″紡鍚屾牱杈撳嚭銆屽綋鍓嶅璞°€嶅垪琛?
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      414 |
+      415 |         const output = stripAnsi((stdout ?? '') + (stderr ?? ''));
+    > 416 |         expect(code).toBe(0);
+          |                      ^
+      417 |
+      418 |         const { groups } = extractCurrentObjects(output);
+      419 |         expect(groups.length).toBeGreaterThan(0);
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:416:22)
+
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-TOK-001: full 妯″紡涓嬪簲杈撳嚭 Token 琛屼笖 total 鍗曡皟闈為檷
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      456 |
+      457 |         const output = stripAnsi((stdout ?? '') + (stderr ?? ''));
+    > 458 |         expect(code).toBe(0);
+          |                      ^
+      459 |
+      460 |         const snapshots = extractTokenSnapshots(output);
+      461 |         expect(snapshots.length).toBeGreaterThan(0);
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:458:22)
+
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-TOK-002: incremental 妯″紡涔熷簲杈撳嚭 Token 缁熻琛?
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      529 |
+      530 |         const output = stripAnsi((stdout ?? '') + (stderr ?? ''));
+    > 531 |         expect(code).toBe(0);
+          |                      ^
+      532 |
+      533 |         const snapshots = extractTokenSnapshots(output);
+      534 |         expect(snapshots.length).toBeGreaterThan(0);
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:531:22)
+
+  鈼?V2.4 CLI 瑙ｆ瀽浜や簰涓庤繘搴?Token 琛屼负 (绗?5绔?ST-V24-*) 鈥?ST-V24-TOK-003: 瑙ｆ瀽缁撴潫鐨勬渶缁堟棩蹇椾腑搴斿寘鍚?Token 浣跨敤姹囨€昏
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      571 |
+      572 |         const output = stripAnsi((stdout ?? '') + (stderr ?? ''));
+    > 573 |         expect(code).toBe(0);
+          |                      ^
+      574 |
+      575 |         expect(output).toMatch(/鏈瑙ｆ瀽鍏辫皟鐢?LLM\s+\d+\s+娆?);
+      576 |         expect(output).toMatch(/杈撳叆 Token:\s*\d+/);
+
+      at Object.<anonymous> (tests/system/v24-cli-interaction-and-progress.test.ts:573:22)
+
+FAIL tests/system/v25-config-init-and-llm-connect.test.ts (25.078 s)
+  鈼?V2.5 閰嶇疆鍒濆鍖栦笌 LLM 杩炴帴 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/ST-CACHE-LIMIT-*/ST-BLACKLIST-IMG-*) 鈥?ST-CONFIG-INIT-002
+: 鍏?init 鍐?analyze 娴佺▼瀹屾暣閫氳繃
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      91 |     ]);
+      92 |
+    > 93 |     expect(result.code).toBe(0);
+         |                         ^
+      94 |     expect(result.stdout + result.stderr).toContain('瑙ｆ瀽瀹屾垚');
+      95 |
+      96 |     await mock.close();
+
+      at Object.<anonymous> (tests/system/v25-config-init-and-llm-connect.test.ts:93:25)
+
+  鈼?V2.5 閰嶇疆鍒濆鍖栦笌 LLM 杩炴帴 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/ST-CACHE-LIMIT-*/ST-BLACKLIST-IMG-*) 鈥?ST-LLM-CONNECT-003
+: LLM 鏈嶅姟杩斿洖閴存潈/妯″瀷閿欒绛夊紓甯哥姸鎬佸鑷?connect 澶辫触
+
+    expect(received).toContain(expected) // indexOf
+
+    Expected substring: "mock server error"
+    Received string:    "LLM 杩炴帴/閰嶇疆鏍￠獙澶辫触: LLM 閰嶇疆涓嶅畬鏁达紝璇峰湪閰嶇疆鏂囦欢鎴栫幆澧冨彉閲忎腑璁剧疆 base_url/api_key/model
+    "
+
+      171 |     expect(result.stderr).toContain('LLM 杩炴帴/閰嶇疆鏍￠獙澶辫触');
+      172 |     // 涓?ST-LLM-CONNECT-002 鍖哄垎锛氭澶?base_url 鍙揪锛宻tderr 涓簲鍖呭惈鏉ヨ嚜 Mock 鏈嶅姟鐨勯敊璇俊鎭?    > 173 |     expect(re
+sult.stderr).toContain('mock server error');
+          |                           ^
+      174 |
+      175 |     await mock.close();
+      176 |     await testProject.cleanup();
+
+      at Object.<anonymous> (tests/system/v25-config-init-and-llm-connect.test.ts:173:27)
+
+  鈼?V2.5 閰嶇疆鍒濆鍖栦笌 LLM 杩炴帴 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/ST-CACHE-LIMIT-*/ST-BLACKLIST-IMG-*) 鈥?ST-CACHE-LIMIT-001
+: 灏忎笂闄愪笅澶氭瑙ｆ瀽瑙﹀彂缂撳瓨娓呯悊浣嗚В鏋愪粛鍙垚鍔?
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      201 |         '-c', configPath,
+      202 |       ]);
+    > 203 |       expect(result.code).toBe(0);
+          |                           ^
+      204 |     }
+      205 |
+      206 |     const exists = await fs.pathExists(cacheDir);
+
+      at Object.<anonymous> (tests/system/v25-config-init-and-llm-connect.test.ts:203:27)
+
+  鈼?V2.5 閰嶇疆鍒濆鍖栦笌 LLM 杩炴帴 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/ST-CACHE-LIMIT-*/ST-BLACKLIST-IMG-*) 鈥?ST-CACHE-LIMIT-002
+: cache_max_size_mb=0 鏃剁鐢ㄧ鐩樼紦瀛橈紝涓嶄骇鐢熶换浣曠紦瀛樻枃浠?
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      252 |         '-c', configPath,
+      253 |       ]);
+    > 254 |       expect(result.code).toBe(0);
+          |                           ^
+      255 |     }
+      256 |
+      257 |     const existsAfter = await fs.pathExists(cacheDir);
+
+      at Object.<anonymous> (tests/system/v25-config-init-and-llm-connect.test.ts:254:27)
+
+  鈼?V2.5 閰嶇疆鍒濆鍖栦笌 LLM 杩炴帴 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/ST-CACHE-LIMIT-*/ST-BLACKLIST-IMG-*) 鈥?ST-BLACKLIST-IMG-0
+01: 榛樿榛戝悕鍗曡繃婊ゅ浘鐗囪祫婧愶紝涓嶇敓鎴?Markdown 涓庣储寮曟潯鐩?
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      308 |     ]);
+      309 |
+    > 310 |     expect(result.code).toBe(0);
+          |                         ^
+      311 |
+      312 |     const resultDir = path.join(projectPath, '.code-analyze-result');
+      313 |     const indexPath = path.join(resultDir, 'analysis-index.json');
+
+      at Object.<anonymous> (tests/system/v25-config-init-and-llm-connect.test.ts:310:25)
+
+  鈼?V2.5 閰嶇疆鍒濆鍖栦笌 LLM 杩炴帴 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/ST-CACHE-LIMIT-*/ST-BLACKLIST-IMG-*) 鈥?ST-BLACKLIST-IMG-0
+02: 閫氳繃 .code-analyze-ignore 瑙ｅ皝閮ㄥ垎鍥剧墖鍚庡彲杩涘叆绱㈠紩/鐢熸垚 Markdown
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 1
+
+      374 |     ]);
+      375 |
+    > 376 |     expect(result.code).toBe(0);
+          |                         ^
+      377 |
+      378 |     const resultDir = path.join(projectPath, '.code-analyze-result');
+      379 |     const indexPath = path.join(resultDir, 'analysis-index.json');
+
+      at Object.<anonymous> (tests/system/v25-config-init-and-llm-connect.test.ts:376:25)
+
+FAIL tests/unit/cli-path.test.ts (20.089 s)
+  鈼?CLI璺緞娴嬭瘯 (UT-CLI-PATH-*) 鈥?UT-CLI-PATH-001: CLI榛樿閰嶇疆璺緞姝ｇ‘锛岀敓鎴愬湪~/.config/code-analyze/config.yaml
+
+    Command failed: node dist/cli.js config --list
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?CLI璺緞娴嬭瘯 (UT-CLI-PATH-*) 鈥?UT-CLI-PATH-002: 榛樿缁撴灉璺緞姝ｇ‘锛屾病鏈変袱绾?code-analyze-result鐩綍
+
+    Command failed: node dist/cli.js analyze --path C:\Users\admin\AppData\Local\Temp\code-analyze-test-project-hNWFCd 
+--mode full --force --no-confirm --llm-base-url http://127.0.0.1:55325/v1 --llm-api-key test --llm-max-retries 0
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?CLI璺緞娴嬭瘯 (UT-CLI-PATH-*) 鈥?UT-CLI-PATH-003: 鑷畾涔塷utput_dir鍙傛暟鐢熸晥
+
+    Command failed: node dist/cli.js analyze --path C:\Users\admin\AppData\Local\Temp\code-analyze-test-project-FvWQZ8 
+--mode full --force --output-dir C:\Users\admin\AppData\Local\Temp\code-analyze-test-project-FvWQZ8\my-custom-result --
+no-confirm --llm-base-url http://127.0.0.1:55337/v1 --llm-api-key test --llm-max-retries 0
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+FAIL tests/system/config.test.ts (9.052 s)
+  鈼?Config System Test (ST-CFG-*) 鈥?ST-CFG-001: 榛樿閰嶇疆璺緞鍦烘櫙娴嬭瘯锛屾湭鎸囧畾-c鍙傛暟鏃堕厤缃敓鎴愬湪姝ｇ‘浣嶇疆
+
+    Command failed: node C:\Software\project\skills-any-code\dist\cli.js analyze --force --no-confirm --llm-base-url ht
+tp://127.0.0.1:55346/v1 --llm-api-key test --llm-max-retries 0
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?Config System Test (ST-CFG-*) 鈥?ST-CFG-002: 鑷畾涔夐厤缃矾寰勫弬鏁扮敓鏁?
+    Command failed: node C:\Software\project\skills-any-code\dist\cli.js config --set global.log_level=debug -c C:\User
+s\admin\AppData\Local\Temp\code-analyze-test-st-project-uxp1Yz\my-config.yaml
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-st-project-uxp1Y
+z\my-config.yaml
+
+
+
+FAIL tests/integration/cli/markdown-structure-ch13.test.ts (9.241 s)
+  鈼?13.3 鐩綍绾?Markdown 鍔熻兘鎻忚堪 (ST-DIR-MD-CONTENT-001) 鈥?ST-DIR-MD-CONTENT-001: 鐩綍鍔熻兘鎻忚堪鍐呭璐ㄩ噺锛岄暱搴︿笌鍏抽敭璇嶈姹?
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-dir-md-177371536690
+6-arh951" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55363/v1 --llm-api-key test --llm-max-retries
+ 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?13.4 鏂囦欢/鐩綍鍛藉悕鍐茬獊 (ST-PATH-CONFLICT-INDEX-001) 鈥?ST-PATH-CONFLICT-INDEX-001: index 鏂囦欢涓庣洰褰曠粨鏋滃叡瀛橈紝浜掍笉瑕嗙洊
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-index-conflict-1773
+715371522-xdwrcf" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55372/v1 --llm-api-key test --llm-max
+-retries 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+FAIL tests/integration/cli/progress.test.ts (5.631 s)
+  鈼?12.3.1 杩涘害鏉′笌瀵硅薄绾ц繘搴?(UT-TERM-001 / ST-V22-PROG-001) 鈥?UT-TERM-001: 杩涘害鏉″湪瑙ｆ瀽杩囩▼涓嚦灏戝嚭鐜?2 娆′笉鍚屾暟鍊硷紝鎬诲璞℃暟鍚堢悊锛屾渶缁堟枃浠
+舵暟姝ｇ‘
+
+    expect(received).toBeGreaterThanOrEqual(expected)
+
+    Expected: >= 2
+    Received:    0
+
+      75 |     // 1锛夊繀椤昏兘瑙ｆ瀽鍑鸿嚦灏戜袱鏉¤繘搴︿俊鎭紙杩涘害鍦ㄨВ鏋愯繃绋嬩腑鏈夋洿鏂帮級
+      76 |     const progressSeq = parseProgressLines(combined);
+    > 77 |     expect(progressSeq.length).toBeGreaterThanOrEqual(2);
+         |                                ^
+      78 |
+      79 |     // 2锛夋€诲璞℃暟鑷冲皯瑕嗙洊 5 涓枃浠讹紙鐩綍+鏂囦欢鎬绘暟搴旀槑鏄惧ぇ浜庢枃浠舵暟锛?      80 |     expect(progressSeq[0].total).toBeGreat
+erThanOrEqual(5);
+
+      at Object.<anonymous> (tests/integration/cli/progress.test.ts:77:32)
+
+  鈼?12.3.1 杩涘害鏉′笌瀵硅薄绾ц繘搴?(UT-TERM-001 / ST-V22-PROG-001) 鈥?ST-V22-PROG-001: 灏忓瀷椤圭洰鎬诲璞℃暟=鐩綍+鏂囦欢锛岃繘搴﹀崟璋冨鑷冲畬鎴愶紝鍏卞垎鏋?3 涓
+枃浠?
+    expect(received).toBeGreaterThanOrEqual(expected)
+
+    Expected: >= 1
+    Received:    0
+
+      115 |
+      116 |     // 鑷冲皯鏈変竴鏉¤繘搴︿俊鎭紝涓旀渶缁?done=total
+    > 117 |     expect(progressSeq.length).toBeGreaterThanOrEqual(1);
+          |                                ^
+      118 |     expect(progressSeq[0].total).toBeGreaterThanOrEqual(4);
+      119 |     const last = progressSeq[progressSeq.length - 1];
+      120 |     expect(last.done).toBe(last.total);
+
+      at Object.<anonymous> (tests/integration/cli/progress.test.ts:117:32)
+
+FAIL tests/system/v22-root-and-flow.test.ts (6.427 s)
+  鈼?V2.2 鏍圭洰褰曚笌鏁翠綋琛屼负 (ST-V22-ROOT) 鈥?ST-V22-ROOT-001: 鍏ㄩ噺瑙ｆ瀽鍚庝笉鐢熸垚 PROJECT_SUMMARY.md锛屾牴鐩綍浠?index.md 琛ㄧず
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-v22-root-1773715381
+864-822z35" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55393/v1 --llm-api-key test --llm-max-retri
+es 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?V2.2 鏍圭洰褰曚笌鏁翠綋琛屼负 (ST-V22-ROOT) 鈥?ST-V22-ROOT-002: 涓嶇敓鎴?ANALYSIS_MODIFICATION_LOG.md
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-v22-root-1773715382
+775-vkj5wo" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55395/v1 --llm-api-key test --llm-max-retri
+es 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?V2.2 鏍圭洰褰曚笌鏁翠綋琛屼负 (ST-V22-ROOT) 鈥?UT-V23-INDEX-001: 鍏ㄩ噺瑙ｆ瀽鍚庡簲鐢熸垚 analysis-index.json
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-v22-root-1773715383
+683-z26xt3" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55397/v1 --llm-api-key test --llm-max-retri
+es 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+FAIL tests/integration/cli/result-integrity.test.ts (5.446 s)
+  鈼?12.3.2 鏂囦欢绾т笌鐩綍绾х粨鏋滃畬鏁存€?(ST-RESULT-FILE-001 / ST-RESULT-DIR-001) 鈥?ST-RESULT-FILE-001: 澶氱骇鐩綍涓嬫瘡涓唬鐮佹枃浠跺潎鏈夊搴?.md
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      63 |
+      64 |     const resultRoot = path.join(testDir, '.code-analyze-result');
+    > 65 |     expect(await fs.pathExists(resultRoot)).toBe(true);
+         |                                             ^
+      66 |
+      67 |     const helloMd = path.join(resultRoot, 'src/main/java/pkg/Hello.md');
+      68 |     const utilMd = path.join(resultRoot, 'src/main/java/pkg/Util.md');
+
+      at Object.<anonymous> (tests/integration/cli/result-integrity.test.ts:65:45)
+
+  鈼?12.3.2 鏂囦欢绾т笌鐩綍绾х粨鏋滃畬鏁存€?(ST-RESULT-FILE-001 / ST-RESULT-DIR-001) 鈥?ST-RESULT-DIR-001: 鐩綍 index.md 鍐呭鏈夋剰涔夛紝鏂囦欢鏁?
+瀛愮洰褰曟暟涓庡疄闄呬竴鑷?
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-result-integrity-17
+73715389065-eqc1dq" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55404/v1 --llm-api-key test --llm-m
+ax-retries 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+FAIL tests/integration/llm/partial-fail.test.ts
+  鈼?12.3.4 LLM 閮ㄥ垎澶辫触璺緞 (ST-LLM-PARTIAL-FAIL-001) 鈥?ST-LLM-PARTIAL-FAIL-001: 閮ㄥ垎澶辫触鏃跺凡鎴愬姛鏂囦欢鍐欏叆姝ｇ‘锛屽け璐ユ枃浠舵棤 .md锛岄敊璇俊鎭
+瓨鍦?
+    expect(received).toBeGreaterThanOrEqual(expected)
+
+    Expected: >= 2
+    Received:    0
+
+      72 |
+      73 |     const successCount = [oneExists, twoExists, threeExists].filter(Boolean).length;
+    > 74 |     expect(successCount).toBeGreaterThanOrEqual(2);
+         |                          ^
+      75 |     expect(successCount).toBeLessThanOrEqual(3);
+      76 |     // 閮ㄥ垎澶辫触鏃?CLI 搴旈€€鍑虹爜 1锛涜嫢 Mock 鏈懡涓枃浠惰姹傚垯鍙兘 exit 0
+      77 |     if (successCount === 2) {
+
+      at Object.<anonymous> (tests/integration/llm/partial-fail.test.ts:74:26)
+
+FAIL tests/integration/llm/v24-token-retry.test.ts
+  鈼?ST-V24-TOK-004: LLM 閲嶈瘯鍦烘櫙涓?Token 缁熻鍚堢悊鎬?鈥?ST-V24-TOK-004: 鍗曟澶辫触鍚庨噸璇曟垚鍔熸椂锛屼粎缁熻鎴愬姛璋冪敤鐨?Token
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-tok-retry-vJkFyv" -
+-mode full --force --no-skills --llm-base-url http://127.0.0.1:55412/v1 --llm-api-key test --llm-max-retries 1 --no-con
+firm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+FAIL tests/system/full-analysis.test.ts
+  鈼?System test: V2.1 LLM鍘熺敓瑙ｆ瀽锛圫T-FULL-* / ST-INC-* 鍏抽敭鍦烘櫙锛?鈥?ST-FULL-007/008/009/010: 澶氳瑷€/鏃犲悗缂€/闈炴爣鍑嗗悗缂€/缃曡璇█鍧囧彲瑙
+ｆ瀽
+
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at AnalysisAppService.runAnalysis (src/application/analysis.app.service.ts:80:19)
+      at Object.<anonymous> (tests/system/full-analysis.test.ts:19:19)
+
+FAIL tests/integration/module-interaction.test.ts
+  鈼?Module interaction integration test锛圴2.1锛?鈥?AnalysisAppService: 娉ㄥ叆llmConfig鍚庡彲瀹屾垚鍏ㄩ噺瑙ｆ瀽锛堜笉鍑虹綉锛?
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at AnalysisAppService.runAnalysis (src/application/analysis.app.service.ts:80:19)
+      at Object.<anonymous> (tests/integration/module-interaction.test.ts:48:19)
+
+FAIL tests/integration/config-path.test.ts
+  鈼?Config Path Integration Test (INT-CFG-*) 鈥?INT-CFG-001: 閰嶇疆鏂囦欢鑷姩鐢熸垚鍦ㄧ敤鎴风洰褰曡€岄潪椤圭洰鐩綍
+
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-int-config\.config\code-analyze\config.y
+aml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/integration/config-path.test.ts:45:5)
+
+  鈼?Config Path Integration Test (INT-CFG-*) 鈥?INT-CFG-002: CLI榛樿閰嶇疆璺緞姝ｇ‘瑙ｆ瀽
+
+    Command failed: node C:\Software\project\skills-any-code\dist\cli.js config --list
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+FAIL tests/unit/cache/file-hash-cache.test.ts
+  鈼?FileHashCache with max size (UT-CACHE-001~003) 鈥?UT-CACHE-002: 瓒呰繃涓婇檺鏃舵寜 mtime 浠庢棫鍒版柊鍒犻櫎
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: false
+    Received: true
+
+      46 |     const aExists = await fs.pathExists(fileA);
+      47 |     const bExists = await fs.pathExists(fileB);
+    > 48 |     expect(aExists).toBe(false);
+         |                     ^
+      49 |     expect(bExists).toBe(true);
+      50 |   });
+      51 |
+
+      at Object.<anonymous> (tests/unit/cache/file-hash-cache.test.ts:48:21)
+
+  鈼?FileHashCache with max size (UT-CACHE-001~003) 鈥?UT-CACHE-003: 鍒犻櫎缂撳瓨鏂囦欢澶辫触鏃惰褰?warning 浣嗕笉鎶涘紓甯?
+    TypeError: Cannot redefine property: remove
+        at Object.defineProperty (<anonymous>)
+
+      57 |
+      58 |     const spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    > 59 |     jest.spyOn(fs, 'remove').mockImplementationOnce(() => {
+         |          ^
+      60 |       throw new Error('mock unlink error');
+      61 |     });
+      62 |
+
+      at ModuleMocker.spyOn (node_modules/jest-mock/build/index.js:776:16)
+      at Object.<anonymous> (tests/unit/cache/file-hash-cache.test.ts:59:10)
+
+FAIL tests/unit/config.test.ts
+  鈼?ConfigManager 閰嶇疆璺緞娴嬭瘯 (UT-CFG-*) 鈥?UT-CFG-001: 閰嶇疆璺緞娉㈡氮鍙峰睍寮€娴嬭瘯锛岄獙璇亊璺緞姝ｇ‘瑙ｆ瀽涓虹敤鎴穐ome鐩綍
+
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-config\.test-config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/config.test.ts:34:5)
+
+  鈼?ConfigManager 閰嶇疆璺緞娴嬭瘯 (UT-CFG-*) 鈥?UT-CFG-002: 閰嶇疆璺緞浼樺厛绾ф祴璇曪紝楠岃瘉CLI鍙傛暟浼樺厛绾ч珮浜庡唴閮ㄩ粯璁よ矾寰?
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-config\custom-config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/config.test.ts:45:5)
+
+  鈼?ConfigManager 閰嶇疆璺緞娴嬭瘯 (UT-CFG-*) 鈥?UT-CFG-003: 涓嶄紶鍏ヨ嚜瀹氫箟璺緞鏃朵娇鐢ㄩ粯璁ら厤缃矾寰?
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-config\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/config.test.ts:58:5)
+
+  鈼?ConfigManager 閰嶇疆璺緞娴嬭瘯 (UT-CFG-*) 鈥?UT-CFG-004: Windows鐜涓婾SERPROFILE鐜鍙橀噺浼樺厛绾ф祴璇?
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-config\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/config.test.ts:71:5)
+
+  鈼?ConfigManager 閰嶇疆璺緞娴嬭瘯 (UT-CFG-*) 鈥?UT-V23-CFG-001: skills.default_providers 榛樿鍊煎簲鍖呭惈 opencode,cursor,claude,code
+x
+
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-config\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/config.test.ts:143:5)
+
+  鈼?ConfigManager 閰嶇疆璺緞娴嬭瘯 (UT-CFG-*) 鈥?UT-V23-CFG-002: analyze.blacklist 榛樿鍊煎簲涓烘暟缁勪笖鍖呭惈甯哥敤妯″紡
+
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-config\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/config.test.ts:153:5)
+
+  鈼?ConfigManager 閰嶇疆璺緞娴嬭瘯 (UT-CFG-*) 鈥?UT-V23-CFG-006: 瀹屾暣閰嶇疆搴斿寘鍚?global銆乤nalyze銆乻kills銆乴lm 涓?analyze 鍚?blacklist
+
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-config\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/config.test.ts:161:5)
+
+FAIL tests/unit/cli-config-path.test.ts
+  鈼?CLI榛樿閰嶇疆璺緞娴嬭瘯 (UT-CLI-CFG-*) 鈥?UT-CLI-CFG-002: CLI榛樿閰嶇疆璺緞灞曞紑姝ｇ‘
+
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\AppData\Local\Temp\code-analyze-test-cli-config\.config\code-analyze\config.y
+aml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/cli-config-path.test.ts:34:5)
+
+FAIL tests/unit/llm/llm.config.test.ts
+  鈼?LLM 閰嶇疆娴嬭瘯 鈥?UT-LLM-003: temperature鍙傛暟瓒呭嚭鑼冨洿鏃舵牎楠屽け璐?
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at Object.<anonymous> (tests/unit/llm/llm.config.test.ts:85:5)
+
+FAIL tests/integration/cli/analyze.test.ts (13.716 s)
+  鈼?CLI 澶氳瑷€瑙ｆ瀽娴嬭瘯 (UT-CLI-*) 鈥?UT-CLI-011: 澶氳瑷€椤圭洰CLI瑙ｆ瀽鎴愬姛锛屾枃浠惰鏁版纭紝姣忎釜婧愭枃浠跺潎鏈夊搴?.md
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-test-G6BCal" --mode
+ full --force --log-level info --llm-base-url http://127.0.0.1:55434/v1 --llm-api-key test --llm-max-retries 0 --no-con
+firm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?CLI 澶氳瑷€瑙ｆ瀽娴嬭瘯 (UT-CLI-*) 鈥?ST-V23-INDEX-INTEGRITY-001: 绱㈠紩 entries 涓?file/directory 鏁伴噺涓?resultPath 瀵瑰簲 .md 鍧囧瓨鍦?
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-test-4IKe83" --mode
+ full --force --llm-base-url http://127.0.0.1:55440/v1 --llm-api-key test --llm-max-retries 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?CLI 澶氳瑷€瑙ｆ瀽娴嬭瘯 (UT-CLI-*) 鈥?UT-CLI-012: 鏃犲悗缂€鏂囦欢CLI瑙ｆ瀽鎴愬姛锛屼笉琚烦杩?
+    Command failed: node dist/cli.js analyze --path C:\Users\admin\AppData\Local\Temp\code-analyze-test-Oi86IV --mode f
+ull --force --log-level info --llm-base-url http://127.0.0.1:55447/v1 --llm-api-key test --llm-max-retries 0 --no-confi
+rm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+FAIL tests/integration/cli/skill-deploy.test.ts (8.082 s)
+  鈼?Skill 閮ㄧ讲闆嗘垚娴嬭瘯 (V23-SKILL) 鈥?UT-V23-SKILL-001: 榛樿 providers 涓嬪簲鐢熸垚 .agents/skills/code-query 鍜?.claude/skills/cod
+e-query
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-skill-1773715420175
+-z3d8kk" --mode full --force --llm-base-url http://127.0.0.1:55462/v1 --llm-api-key test --llm-max-retries 0 --no-confi
+rm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?Skill 閮ㄧ讲闆嗘垚娴嬭瘯 (V23-SKILL) 鈥?UT-V23-SKILL-002: SKILL.md 搴斿寘鍚?name/code-query銆乨escription銆乧ompatibility 鍙婃鏂囩珷鑺?
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-skill-1773715421072
+-js4176" --mode full --force --llm-base-url http://127.0.0.1:55464/v1 --llm-api-key test --llm-max-retries 0 --no-confi
+rm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?Skill 閮ㄧ讲闆嗘垚娴嬭瘯 (V23-SKILL) 鈥?UT-V23-SKILL-003: resolve-config.json 搴斿寘鍚?indexFilePath 涓旀寚鍚戝瓨鍦ㄦ枃浠?
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-skill-1773715421956
+-feq52t" --mode full --force --llm-base-url http://127.0.0.1:55466/v1 --llm-api-key test --llm-max-retries 0 --no-confi
+rm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?Skill 閮ㄧ讲闆嗘垚娴嬭瘯 (V23-SKILL) 鈥?UT-V23-SKILL-007: --no-skills 搴斾笉鐢熸垚 Skill 鐩綍
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-skill-1773715422834
+-zwfn0f" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55469/v1 --llm-api-key test --llm-max-retries 
+0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?Skill 閮ㄧ讲闆嗘垚娴嬭瘯 (V23-SKILL) 鈥?UT-V23-SCRIPT-001/008: 鐙珛鑴氭湰鏌ヨ涓?CLI resolve 杈撳嚭涓€鑷?
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-skill-1773715423782
+-ia3drp" --mode full --force --llm-base-url http://127.0.0.1:55470/v1 --llm-api-key test --llm-max-retries 0 --no-confi
+rm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+FAIL tests/unit/parser.test.ts (7.275 s)
+  鈼?LLM 鍘熺敓瑙ｆ瀽瑕嗙洊锛堟浛浠ｆ棫 ParserRegistry锛?鈥?UT-PARSE-006/009(瑕嗙洊): 浠绘剰鍚庣紑/鏃犲悗缂€鏂囨湰鏂囦欢閮戒細杩涘叆LLM瑙ｆ瀽娴佺▼
+
+    AppError: 閰嶇疆鏂囦欢鏈垵濮嬪寲锛欳:\Users\admin\.config\code-analyze\config.yaml
+
+      111 |       const defaultConfig = ConfigSchema.parse({});
+      112 |       this.config = defaultConfig;
+    > 113 |       throw new AppError(
+          |             ^
+      114 |         ErrorCode.CONFIG_NOT_INITIALIZED,
+      115 |         `閰嶇疆鏂囦欢鏈垵濮嬪寲锛?{this.configPath}`,
+      116 |       );
+
+      at ConfigManager.load (src/common/config.ts:113:13)
+      at AnalysisAppService.runAnalysis (src/application/analysis.app.service.ts:80:19)
+      at Object.<anonymous> (tests/unit/parser.test.ts:58:22)
+
+FAIL tests/integration/cli/resolve.test.ts (6.926 s)
+  鈼?CLI resolve 闆嗘垚娴嬭瘯 (V23) 鈥?UT-V23-RESOLVE-001: 瑙ｆ瀽鍚?resolve 搴旇繑鍥炲搴?Markdown 璺緞
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-resolve-int-1773715
+436027-2wld84" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55491/v1 --llm-api-key test --llm-max-re
+tries 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?CLI resolve 闆嗘垚娴嬭瘯 (V23) 鈥?UT-V23-RESOLVE-003: 涓嶅瓨鍦ㄧ殑璺緞搴旇緭鍑?N/A
+
+    Command failed: node dist/cli.js analyze --path "C:\Users\admin\AppData\Local\Temp\code-analyze-resolve-int-1773715
+436975-33g3gd" --mode full --force --no-skills --llm-base-url http://127.0.0.1:55494/v1 --llm-api-key test --llm-max-re
+tries 0 --no-confirm
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+  鈼?CLI resolve 闆嗘垚娴嬭瘯 (V23) 鈥?UT-V23-RESOLVE-004: 绱㈠紩涓嶅瓨鍦ㄦ椂 resolve 杩斿洖 N/A锛堝綋鍓嶅疄鐜颁负 exit 0 + N/A锛?
+    Command failed: node dist/cli.js resolve "C:/Users/admin/AppData/Local/Temp/code-analyze-resolve-int-1773715437914-
+wacalw/src/index.ts" --project "C:\Users\admin\AppData\Local\Temp\code-analyze-resolve-int-1773715437914-wacalw"
+    閰嶇疆鏂囦欢鏈垵濮嬪寲锛岃鍏堟墽琛?"code-analyze init" 鍒涘缓閰嶇疆锛殈/.config/code-analyze/config.yaml
+
+
+
+FAIL tests/unit/llm/openai-client-connect.test.ts
+  鈼?Test suite failed to run
+
+    [96mtests/unit/llm/openai-client-connect.test.ts[0m:[93m73[0m:[93m1[0m - [91merror[0m[90m TS1005: [0m')' 
+expected.
+
+    [7m73[0m 
+    [7m  [0m [91m[0m
+
+FAIL tests/unit/llm/llm.security.test.ts
+  鈼?Test suite failed to run
+
+    [96mtests/unit/llm/llm.security.test.ts[0m:[93m31[0m:[93m37[0m - [91merror[0m[90m TS2345: [0mArgument of 
+type 'string' is not assignable to parameter of type 'FileHashCacheOptions'.
+
+    [7m31[0m     const cache = new FileHashCache('C:\\\\temp\\\\code-analyze-test-cache');
+    [7m  [0m [91m                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [96mtests/unit/llm/llm.security.test.ts[0m:[93m57[0m:[93m23[0m - [91merror[0m[90m TS2339: [0mProperty 'ge
+tStats' does not exist on type 'LLMAnalysisService'.
+
+    [7m57[0m     const stats = svc.getStats();
+    [7m  [0m [91m                      ~~~~~~~~[0m
+
+FAIL tests/unit/llm/llm.error-handler.test.ts
+  鈼?Test suite failed to run
+
+    [96mtests/unit/llm/llm.error-handler.test.ts[0m:[93m24[0m:[93m37[0m - [91merror[0m[90m TS2345: [0mArgumen
+t of type '{ base_url: string; api_key: string; model: string; temperature: number; max_tokens: number; timeout: number
+; max_retries: number; retry_delay: number; context_window_size: number; cache_enabled: true; cache_dir: string; }' is 
+not assignable to parameter of type 'LLMConfig'.
+      Property 'cache_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature:
+ number; max_tokens: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; ca
+che_enabled: true; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m 24[0m     const client = new OpenAIClient({
+    [7m   [0m [91m                                    ~[0m
+    [7m 25[0m       base_url: 'http://127.0.0.1:12345/v1',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m...[0m 
+    [7m 35[0m       cache_dir: './.cache',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m 36[0m     });
+    [7m   [0m [91m~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+    [96mtests/unit/llm/llm.error-handler.test.ts[0m:[93m54[0m:[93m37[0m - [91merror[0m[90m TS2345: [0mArgumen
+t of type '{ base_url: string; api_key: string; model: string; temperature: number; max_tokens: number; timeout: number
+; max_retries: number; retry_delay: number; context_window_size: number; cache_enabled: true; cache_dir: string; }' is 
+not assignable to parameter of type 'LLMConfig'.
+      Property 'cache_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature:
+ number; max_tokens: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; ca
+che_enabled: true; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m 54[0m     const client = new OpenAIClient({
+    [7m   [0m [91m                                    ~[0m
+    [7m 55[0m       base_url: 'http://127.0.0.1:12345/v1',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m...[0m 
+    [7m 65[0m       cache_dir: './.cache',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m 66[0m     });
+    [7m   [0m [91m~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+
+FAIL tests/unit/llm/llm.client.test.ts
+  鈼?Test suite failed to run
+
+    [96mtests/unit/llm/llm.client.test.ts[0m:[93m47[0m:[93m37[0m - [91merror[0m[90m TS2345: [0mArgument of ty
+pe '{ base_url: string; api_key: string; model: string; temperature: number; max_tokens: number; timeout: number; max_r
+etries: number; retry_delay: number; context_window_size: number; cache_enabled: true; cache_dir: string; }' is not ass
+ignable to parameter of type 'LLMConfig'.
+      Property 'cache_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature:
+ number; max_tokens: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; ca
+che_enabled: true; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m 47[0m     const client = new OpenAIClient({
+    [7m   [0m [91m                                    ~[0m
+    [7m 48[0m       base_url: 'http://127.0.0.1:12345/v1',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m...[0m 
+    [7m 58[0m       cache_dir: './.cache',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m 59[0m     });
+    [7m   [0m [91m~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+    [96mtests/unit/llm/llm.client.test.ts[0m:[93m72[0m:[93m37[0m - [91merror[0m[90m TS2345: [0mArgument of ty
+pe '{ base_url: string; api_key: string; model: string; temperature: number; max_tokens: number; timeout: number; max_r
+etries: number; retry_delay: number; context_window_size: number; cache_enabled: true; cache_dir: string; }' is not ass
+ignable to parameter of type 'LLMConfig'.
+      Property 'cache_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature:
+ number; max_tokens: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; ca
+che_enabled: true; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m 72[0m     const client = new OpenAIClient({
+    [7m   [0m [91m                                    ~[0m
+    [7m 73[0m       base_url: 'http://127.0.0.1:12345/v1',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m...[0m 
+    [7m 83[0m       cache_dir: './.cache',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m 84[0m     });
+    [7m   [0m [91m~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+    [96mtests/unit/llm/llm.client.test.ts[0m:[93m97[0m:[93m37[0m - [91merror[0m[90m TS2345: [0mArgument of ty
+pe '{ base_url: string; api_key: string; model: string; temperature: number; max_tokens: number; timeout: number; max_r
+etries: number; retry_delay: number; context_window_size: number; cache_enabled: true; cache_dir: string; }' is not ass
+ignable to parameter of type 'LLMConfig'.
+      Property 'cache_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature:
+ number; max_tokens: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; ca
+che_enabled: true; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m 97[0m     const client = new OpenAIClient({
+    [7m   [0m [91m                                    ~[0m
+    [7m 98[0m       base_url: 'http://127.0.0.1:12345/v1',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m...[0m 
+    [7m108[0m       cache_dir: './.cache',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m109[0m     });
+    [7m   [0m [91m~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+
+FAIL tests/unit/llm/analysis.cache.test.ts
+  鈼?Test suite failed to run
+
+    [96mtests/unit/llm/analysis.cache.test.ts[0m:[93m31[0m:[93m31[0m - [91merror[0m[90m TS2345: [0mArgument o
+f type 'string' is not assignable to parameter of type 'FileHashCacheOptions'.
+
+    [7m31[0m     cache = new FileHashCache(cacheDir);
+    [7m  [0m [91m                              ~~~~~~~~[0m
+
+FAIL tests/unit/services/analysis.test.ts
+  鈼?Test suite failed to run
+
+    [96mtests/unit/services/analysis.test.ts[0m:[93m53[0m:[93m7[0m - [91merror[0m[90m TS2345: [0mArgument of 
+type '{ base_url: string; api_key: string; model: string; temperature: number; max_tokens: number; timeout: number; max
+_retries: number; retry_delay: number; context_window_size: number; cache_enabled: false; cache_dir: string; }' is not 
+assignable to parameter of type 'LLMConfig'.
+      Property 'cache_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature:
+ number; max_tokens: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; ca
+che_enabled: false; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m 53[0m       {
+    [7m   [0m [91m      ~[0m
+    [7m 54[0m         base_url: 'http://127.0.0.1:12345/v1',
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m...[0m 
+    [7m 64[0m         cache_dir: path.join(testProjectRoot, '.cache'),
+    [7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m 65[0m       }
+    [7m   [0m [91m~~~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+
+FAIL tests/integration/full-process.test.ts
+  鈼?Test suite failed to run
+
+    [96mtests/integration/full-process.test.ts[0m:[93m30[0m:[93m7[0m - [91merror[0m[90m TS2741: [0mProperty '
+cache_max_size_mb' is missing in type '{ base_url: string; api_key: string; model: string; temperature: number; max_tok
+ens: number; timeout: number; max_retries: number; retry_delay: number; context_window_size: number; cache_enabled: fal
+se; cache_dir: string; }' but required in type 'LLMConfig'.
+
+    [7m30[0m       llmConfig: {
+    [7m  [0m [91m      ~~~~~~~~~[0m
+
+      [96msrc/common/types.ts[0m:[93m327[0m:[93m3[0m
+        [7m327[0m   cache_max_size_mb: number;
+        [7m   [0m [96m  ~~~~~~~~~~~~~~~~~[0m
+        'cache_max_size_mb' is declared here.
+      [96msrc/common/types.ts[0m:[93m216[0m:[93m3[0m
+        [7m216[0m   llmConfig?: LLMConfig
+        [7m   [0m [96m  ~~~~~~~~~[0m
+        The expected type comes from property 'llmConfig' which is declared here on type 'AnalyzeProjectCommandParams &
+ { outputDir?: string | undefined; }'
+
+
+Test Suites: 29 failed, 10 passed, 39 total
+Tests:       58 failed, 69 passed, 127 total
+Snapshots:   0 total
+Time:        174.836 s, estimated 497 s
+Ran all test suites.
+Jest did not exit one second after the test run has completed.
+
+'This usually means that there are asynchronous operations that weren't stopped in your tests. Consider running Jest wi
+th `--detectOpenHandles` to troubleshoot this issue.

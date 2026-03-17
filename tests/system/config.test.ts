@@ -43,10 +43,18 @@ describe('Config System Test (ST-CFG-*)', () => {
     await fs.remove(tempProjectDir);
   });
   
-  test('ST-CFG-001: 默认配置路径场景测试，未指定-c参数时配置生成在正确位置', async () => {
+  test('ST-CFG-001: 默认配置路径场景测试，先 init 再 analyze 时配置在正确位置', async () => {
     process.chdir(tempProjectDir);
-    
-    await execAsync(`node ${cliPath} analyze --force --no-confirm --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0`, {
+
+    await execAsync(`node ${cliPath} init`, {
+      env: {
+        ...process.env,
+        HOME: tempHome,
+        USERPROFILE: tempHome
+      }
+    });
+
+    await execAsync(`node ${cliPath} analyze --force --no-confirm --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-model mock --llm-max-retries 0`, {
       env: {
         ...process.env,
         HOME: tempHome,
@@ -66,7 +74,15 @@ describe('Config System Test (ST-CFG-*)', () => {
   
   test('ST-CFG-002: 自定义配置路径参数生效', async () => {
     const customConfigPath = path.join(tempProjectDir, 'my-config.yaml');
-    
+
+    await execAsync(`node ${cliPath} init -c ${customConfigPath}`, {
+      env: {
+        ...process.env,
+        HOME: tempHome,
+        USERPROFILE: tempHome
+      }
+    });
+
     await execAsync(`node ${cliPath} config --set global.log_level=debug -c ${customConfigPath}`, {
       cwd: path.join(__dirname, '../../'),
       env: {

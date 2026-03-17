@@ -28,7 +28,7 @@ describe('解析结果缓存机制测试', () => {
 
   beforeEach(async () => {
     await fs.remove(cacheDir);
-    cache = new FileHashCache(cacheDir);
+    cache = new FileHashCache({ cacheDir, maxSizeMb: 500 });
     llmClient = {
       call: jest.fn(),
       batchCall: jest.fn(),

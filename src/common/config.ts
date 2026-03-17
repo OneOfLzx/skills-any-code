@@ -46,6 +46,8 @@ const ConfigSchema = z.object({
     model: z.string().default(''),
     temperature: z.number().min(0).max(2).default(0.1),
     max_tokens: z.number().int().min(100).default(4000),
+    // 资源保护：单次解析累计 Token 上限（totalTokens），0 表示不限制
+    max_total_tokens: z.number().int().min(0).default(200_000),
     timeout: z.number().int().min(1000).default(60000),
     max_retries: z.number().int().min(0).default(3),
     retry_delay: z.number().int().min(100).default(1000),
@@ -144,6 +146,7 @@ class ConfigManager {
       if (configKey === 'llm_model' && value) envConfig.llm.model = value;
       if (configKey === 'llm_temperature' && value) envConfig.llm.temperature = Number(value);
       if (configKey === 'llm_max_tokens' && value) envConfig.llm.max_tokens = Number(value);
+      if (configKey === 'llm_max_total_tokens' && value) envConfig.llm.max_total_tokens = Number(value);
       if (configKey === 'llm_timeout' && value) envConfig.llm.timeout = Number(value);
       if (configKey === 'llm_max_retries' && value) envConfig.llm.max_retries = Number(value);
       if (configKey === 'llm_retry_delay' && value) envConfig.llm.retry_delay = Number(value);
@@ -152,7 +155,15 @@ class ConfigManager {
       if (configKey === 'llm_cache_dir' && value) envConfig.llm.cache_dir = value;
     });
 
-    config = ConfigSchema.parse({ ...config, ...envConfig });
+    // 注意：配置为嵌套对象，环境变量覆盖需要做“深合并”，否则只设置某个 llm 子字段
+    // 会导致整个 llm 段被浅覆盖成不完整对象（从而触发 LLM_INVALID_CONFIG）。
+    config = ConfigSchema.parse({
+      ...config,
+      global: { ...config.global, ...(envConfig.global ?? {}) },
+      analyze: { ...config.analyze, ...(envConfig.analyze ?? {}) },
+      skills: { ...config.skills, ...(envConfig.skills ?? {}) },
+      llm: { ...config.llm, ...(envConfig.llm ?? {}) },
+    });
 
     this.config = config;
     return config;

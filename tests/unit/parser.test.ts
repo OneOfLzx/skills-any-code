@@ -2,8 +2,10 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs-extra';
 import path from 'path';
+import os from 'os';
 import { AnalysisAppService } from '../../src/application/analysis.app.service';
 import { startMockOpenAIServer } from '../utils/mock-openai-server';
+import { createTestConfigInDir } from '../utils/test-config-helper';
 
 const execAsync = promisify(exec);
 const repoRoot = path.join(__dirname, '../../');
@@ -46,6 +48,32 @@ describe('CLI 子命令与参数 (V2.3 UT-CLI-001/003/004)', () => {
 });
 
 describe('LLM 原生解析覆盖（替代旧 ParserRegistry）', () => {
+  let tempHome: string;
+  const originalHome = process.env.HOME;
+  const originalUserProfile = process.env.USERPROFILE;
+
+  beforeAll(async () => {
+    tempHome = path.join(require('os').tmpdir(), `ca-parser-${Date.now()}`);
+    await fs.ensureDir(tempHome);
+    const mock = await startMockOpenAIServer();
+    await createTestConfigInDir(tempHome, {
+      llmBaseUrl: mock.baseUrl,
+      llmApiKey: 'test',
+      llmModel: 'mock',
+      cacheEnabled: false,
+      cacheMaxSizeMb: 0,
+    });
+    await mock.close();
+    process.env.HOME = tempHome;
+    process.env.USERPROFILE = tempHome;
+  });
+
+  afterAll(async () => {
+    process.env.HOME = originalHome;
+    process.env.USERPROFILE = originalUserProfile;
+    await fs.remove(tempHome).catch(() => {});
+  });
+
   test('UT-PARSE-006/009(覆盖): 任意后缀/无后缀文本文件都会进入LLM解析流程', async () => {
     const mock = await startMockOpenAIServer();
     const tempDir = await fs.mkdtemp(path.join(require('os').tmpdir(), 'code-analyze-parse-'));
@@ -65,12 +93,14 @@ describe('LLM 原生解析覆盖（替代旧 ParserRegistry）', () => {
           model: 'mock',
           temperature: 0.1,
           max_tokens: 1000,
+          max_total_tokens: 200_000,
           timeout: 1000,
           max_retries: 0,
           retry_delay: 1,
           context_window_size: 1000,
           cache_enabled: false,
           cache_dir: path.join(tempDir, '.cache'),
+          cache_max_size_mb: 0,
         },
       } as any);
 

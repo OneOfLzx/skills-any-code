@@ -50,12 +50,14 @@ describe('LLM 客户端与解析测试', () => {
       model: 'mock-model',
       temperature: 0.1,
       max_tokens: 1000,
+      max_total_tokens: 200_000,
       timeout: 1000,
       max_retries: 0,
       retry_delay: 10,
       context_window_size: 1000,
       cache_enabled: true,
       cache_dir: './.cache',
+      cache_max_size_mb: 0,
     });
 
     const resp = await client.call('prompt');
@@ -75,12 +77,14 @@ describe('LLM 客户端与解析测试', () => {
       model: 'mock-model',
       temperature: 0.1,
       max_tokens: 1000,
+      max_total_tokens: 200_000,
       timeout: 1000,
       max_retries: 0,
       retry_delay: 10,
       context_window_size: 1000,
       cache_enabled: true,
       cache_dir: './.cache',
+      cache_max_size_mb: 0,
     });
 
     // 让 create 抛出 status=429
@@ -100,12 +104,14 @@ describe('LLM 客户端与解析测试', () => {
       model: 'mock-model',
       temperature: 0.1,
       max_tokens: 1000,
+      max_total_tokens: 200_000,
       timeout: 1,
       max_retries: 0,
       retry_delay: 10,
       context_window_size: 1000,
       cache_enabled: true,
       cache_dir: './.cache',
+      cache_max_size_mb: 0,
     });
 
     const instance = (OpenAI as unknown as jest.Mock).mock.results.at(-1)?.value;

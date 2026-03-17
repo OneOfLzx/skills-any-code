@@ -7,7 +7,8 @@ import { version } from '../package.json';
 import { AnalysisAppService } from './application/analysis.app.service';
 import { configManager } from './common/config';
 import { logger } from './common/logger';
-import { confirm, progressBar, select } from './common/ui';
+import { cliRenderer, confirm, select } from './common/ui';
+import type { TokenUsageStats } from './common/types';
 import { AppError, ErrorCode } from './common/errors';
 import { LocalStorageService } from './infrastructure/storage.service';
 import { GitService } from './infrastructure/git.service';
@@ -67,7 +68,7 @@ program
   .option('-p, --path <path>', '指定解析的项目根路径', process.cwd())
   .option('-m, --mode <mode>', '解析模式：full/incremental/auto', 'auto')
   .option('-d, --depth <number>', '解析深度，默认无限制', '-1')
-  .option('-C, --concurrency <number>', '并行解析并发数', String(require('os').cpus().length * 2))
+  .option('-C, --concurrency <number>', '并行解析并发数（未传时使用配置 analyze.default_concurrency）')
   .option('--output-dir <path>', '自定义结果输出目录')
   .option('--no-confirm', '跳过所有确认提示，自动执行')
   .option('--force', '强制解析，忽略未提交变更警告')
@@ -79,6 +80,7 @@ program
   .option('--llm-model <model>', 'LLM模型名称')
   .option('--llm-temperature <number>', 'LLM生成温度（0-2）', parseFloat)
   .option('--llm-max-tokens <number>', 'LLM最大生成Token数', parseInt)
+  .option('--llm-max-total-tokens <number>', '单次解析允许的累计 Token 上限（totalTokens），默认使用配置文件值', parseInt)
   .option('--llm-timeout <ms>', 'LLM调用超时时间（毫秒）', parseInt)
   .option('--llm-max-retries <number>', 'LLM调用最大重试次数', parseInt)
   .option('--llm-retry-delay <ms>', 'LLM重试间隔时间（毫秒）', parseInt)
@@ -105,7 +107,10 @@ program
         }
         throw e;
       }
-      logger.setLevel(program.opts().logLevel as any);
+      const cliLogLevel = program.opts().logLevel as any;
+      if (cliLogLevel) {
+        logger.setLevel(cliLogLevel);
+      }
 
       // 合并LLM命令行参数
       if (options.llmBaseUrl) config.llm.base_url = options.llmBaseUrl;
@@ -113,6 +118,7 @@ program
       if (options.llmModel) config.llm.model = options.llmModel;
       if (options.llmTemperature !== undefined) config.llm.temperature = options.llmTemperature;
       if (options.llmMaxTokens !== undefined) config.llm.max_tokens = options.llmMaxTokens;
+      if (options.llmMaxTotalTokens !== undefined) config.llm.max_total_tokens = options.llmMaxTotalTokens;
       if (options.llmTimeout !== undefined) config.llm.timeout = options.llmTimeout;
       if (options.llmMaxRetries !== undefined) config.llm.max_retries = options.llmMaxRetries;
       if (options.llmRetryDelay !== undefined) config.llm.retry_delay = options.llmRetryDelay;
@@ -136,7 +142,7 @@ program
         path: options.path,
         mode: options.mode as any,
         depth: Number(options.depth),
-        concurrency: Number(options.concurrency),
+        concurrency: options.concurrency !== undefined ? Number(options.concurrency) : config.analyze.default_concurrency,
         outputDir: options.outputDir || config.global.output_dir,
         force: options.force || false,
         llmConfig: config.llm,
@@ -145,6 +151,17 @@ program
           : undefined,
         noSkills: options.skills === false,
       };
+
+      // V2.5：解析前执行 LLM 连接可用性校验，失败则立即退出（需求文档 13.4.2 / 测试文档 ST-LLM-CONNECT-001）
+      const { OpenAIClient } = await import('./infrastructure/llm/openai.client');
+      const llmClient = new OpenAIClient(config.llm);
+      try {
+        await llmClient.testConnection(config.llm);
+      } catch (e: any) {
+        const detail = e?.message || String(e);
+        process.stderr.write(`LLM 连接/配置校验失败: ${detail}\n`);
+        process.exit(1);
+      }
 
       const analysisService = new AnalysisAppService();
 
@@ -155,18 +172,25 @@ program
         );
       }
 
-      // 启动进度条（后续会在真实 total 已知时通过 onTotalKnown 重启）
+      // 启动统一 CLI 渲染器（进度 / 当前对象 / Tokens 单一区域）
       logger.info(`开始解析项目：${options.path}`);
-      progressBar.start(100, 0, { file: '初始化中...' });
+
+      // 在 analyze 生命周期内，将所有 logger 输出通过 CLI 渲染器固定到进度块下方，
+      // 避免产生额外的进度/对象/Tokens 区域块。
+      logger.setSink((line) => {
+        cliRenderer.logBelow(line);
+      });
 
       const paramsWithProgress = {
         ...analysisParams,
         onTotalKnown: (total: number) => {
-          progressBar.stop();
-          progressBar.start(total, 0, { file: '初始化中...' });
+          cliRenderer.setTotal(total);
         },
-        onProgress: (done: number, _total: number, current?: { path: string }) => {
-          progressBar.update(done, { file: current?.path || 'N/A' });
+        onProgress: (done: number, total: number, current?: { path: string }) => {
+          cliRenderer.updateProgress(done, total, current?.path, analysisParams.concurrency);
+        },
+        onTokenUsageSnapshot: (stats: TokenUsageStats) => {
+          cliRenderer.updateTokens(stats);
         },
       };
 
@@ -174,11 +198,15 @@ program
       // 执行解析（V2.4+：不再在 CLI 中做交互式错误处理，所有 LLM 错误由应用层统一抛出）
       result = await analysisService.runAnalysis(paramsWithProgress);
       
-      progressBar.stop();
-
       if (result.success) {
-        logger.success(`解析完成！共分析 ${result.data?.analyzedFilesCount || 0} 个文件，耗时 ${((result.data?.duration || 0) / 1000).toFixed(2)}s`);
-        logger.success(`项目分析结果入口：${result.data?.summaryPath || ''}`);
+        logger.success(
+          `解析完成！共分析 ${result.data?.analyzedFilesCount || 0} 个文件，耗时 ${(
+            (result.data?.duration || 0) / 1000
+          ).toFixed(2)}s`,
+        );
+        const summaryPath = result.data?.summaryPath || '';
+        const summaryLabel = summaryPath ? `入口文件：${path.basename(summaryPath)}` : '入口文件：index.md';
+        logger.success(`项目分析结果${summaryLabel}`);
         const usage = result.data?.tokenUsage;
         if (usage) {
           logger.info(
@@ -194,14 +222,21 @@ program
         process.exit(1);
       }
     } catch (error) {
-      progressBar.stop();
       const err = error as any;
       // V2.5：LLM 连接/配置校验失败时统一输出明确前缀，满足 ST-LLM-CONNECT-001/002/003
-      if (err && err.code && (
-        err.code === ErrorCode.LLM_INVALID_CONFIG ||
-        err.code === ErrorCode.LLM_CALL_FAILED ||
-        err.code === ErrorCode.LLM_TIMEOUT
-      )) {
+      if (err && err.code === ErrorCode.LLM_TOKEN_LIMIT_EXCEEDED) {
+        const detail = err.message || '';
+        process.stderr.write(
+          `解析终止：累计 Token 使用量超过上限，为防止进程 OOM 已安全中止。\n` +
+            `${detail}\n` +
+            `建议：尝试降低解析深度（如 --depth）、缩小解析路径范围、增加黑名单，或分模块分别运行 "ca analyze"；` +
+            `如仍需解析超大项目，可在 Node 启动参数中适当调整 --max-old-space-size。\n`,
+        );
+      } else if (err && err.code && (
+          err.code === ErrorCode.LLM_INVALID_CONFIG ||
+          err.code === ErrorCode.LLM_CALL_FAILED ||
+          err.code === ErrorCode.LLM_TIMEOUT
+        )) {
         const detail = err.message || '';
         process.stderr.write(`LLM 连接/配置校验失败: ${detail}\n`);
       } else if (err instanceof AppError) {

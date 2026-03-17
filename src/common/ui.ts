@@ -1,47 +1,182 @@
-import cliProgress from 'cli-progress';
 import inquirer from 'inquirer';
 import pc from 'picocolors';
+import type { TokenUsageStats } from './types';
 
-export class ProgressBar {
-  private bar: cliProgress.SingleBar | null = null;
-  private total: number = 0;
-  private current: number = 0;
+interface CliRenderState {
+  total: number;
+  done: number;
+  currentObjects: string[];
+  tokens?: TokenUsageStats;
+  totalKnown: boolean;
+}
 
-  start(total: number, initialValue: number = 0, payload?: any) {
-    this.total = total;
-    this.current = initialValue;
-    
-    this.bar = new cliProgress.SingleBar({
-      format: `${pc.blue('解析进度')} |${pc.cyan('{bar}')}| {percentage}% | 已处理: {value}/{total} 对象 | 当前对象:\n{file}`,
-      barCompleteChar: '\u2588',
-      barIncompleteChar: '\u2591',
-      hideCursor: true,
-      clearOnComplete: false,
-      // 非 TTY（如 CI/测试）时仍输出进度，便于断言；并将进度输出定向到 stdout，避免污染 stderr
-      noTTYOutput: !process.stdout.isTTY,
-      stream: process.stdout,
-    }, cliProgress.Presets.shades_classic);
+/**
+ * CLI 多行区域渲染器：统一负责
+ * - 进度行：「解析进度 |████...| 37% | 已处理: x/y 对象」
+ * - 当前对象块：
+ *   当前对象:
+ *     [ foo ]
+ *     [ bar ]
+ * - Tokens 行：「Tokens: in=... out=... total=...」
+ *
+ * 通过 ANSI 光标控制码在同一块区域内重绘，避免产生多份重复的块。
+ */
+export class CliMultiSectionRenderer {
+  private state: CliRenderState = {
+    total: 0,
+    done: 0,
+    currentObjects: [],
+    totalKnown: false,
+  };
 
-    this.bar.start(total, initialValue, { file: payload?.file || 'N/A' });
+  // 最近一次渲染占用了多少行，用于回退光标和清空
+  private renderedLines = 0;
+  private readonly isInteractive: boolean;
+
+  constructor() {
+    this.isInteractive = !!process.stdout.isTTY && process.env.TERM !== 'dumb';
   }
 
-  update(current: number, payload?: any) {
-    this.current = current;
-    this.bar?.update(current, { file: payload?.file || 'N/A' });
+  setTotal(total: number) {
+    this.state.total = total;
+    this.state.totalKnown = true;
+    if (this.state.done > total) {
+      this.state.done = total;
+    }
+    this.render();
   }
 
-  increment(step: number = 1, payload?: any) {
-    this.current += step;
-    this.bar?.increment(step, { file: payload?.file || 'N/A' });
+  updateProgress(done: number, total: number, currentPathsText?: string, maxLines?: number) {
+    this.state.done = done;
+    // 若 total 尚未通过 onTotalKnown 确认，则不接受外部传入的 total，避免占位魔法数字污染首帧。
+    if (this.state.totalKnown) {
+      this.state.total = total;
+    }
+    if (currentPathsText !== undefined) {
+      let lines = currentPathsText
+        .split('\n')
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0);
+      if (typeof maxLines === 'number' && maxLines > 0 && lines.length > maxLines) {
+        lines = lines.slice(0, maxLines);
+      }
+      this.state.currentObjects = lines;
+    }
+    this.render();
   }
 
-  stop() {
-    this.bar?.stop();
-    this.bar = null;
+  updateTokens(tokens: TokenUsageStats) {
+    this.state.tokens = { ...tokens };
+    this.render();
+  }
+
+  /**
+   * 在进度区域下方追加一条日志。
+   * 实现方式：先清空进度区域，将日志打印到 stdout，然后重新渲染进度区域。
+   */
+  logBelow(message: string) {
+    if (this.isInteractive) {
+      this.clearRenderedArea();
+      process.stdout.write(message + '\n');
+      this.render();
+    } else {
+      // 非交互终端下不做覆盖，仅顺序输出日志与最新快照，避免依赖 ANSI 光标控制。
+      process.stdout.write(message + '\n');
+      const lines = this.buildLines();
+      for (const line of lines) {
+        process.stdout.write(line + '\n');
+      }
+    }
+  }
+
+  private buildLines(): string[] {
+    const { total, done, currentObjects, tokens, totalKnown } = this.state;
+
+    const safeTotal = totalKnown && total > 0 ? total : 1;
+    const ratio = totalKnown ? Math.max(0, Math.min(1, done / safeTotal)) : 0;
+    const percentage = totalKnown ? Math.floor(ratio * 100) : 0;
+
+    const barWidth = 40;
+    const completeCount = Math.round(barWidth * ratio);
+    const incompleteCount = barWidth - completeCount;
+    const bar =
+      '█'.repeat(completeCount) +
+      '░'.repeat(Math.max(0, incompleteCount));
+
+    const lines: string[] = [];
+
+    // 进度行（V2.4：将「已处理: x/y」拆为独立行，避免被“当前对象路径提取”误判为路径）
+    const totalLabel = totalKnown ? String(total) : '?';
+    lines.push(`${pc.blue('解析进度')} |${pc.cyan(bar)}| ${percentage}%`);
+    lines.push(`已处理: ${done}/${totalLabel} 对象`);
+
+    // 当前对象块
+    lines.push('当前对象:');
+    if (currentObjects.length === 0) {
+      lines.push('  [ N/A ]');
+    } else {
+      for (const obj of currentObjects) {
+        lines.push(`  [ ${obj} ]`);
+      }
+    }
+
+    // Tokens 行
+    if (tokens) {
+      lines.push(
+        `Tokens: in=${tokens.totalPromptTokens} out=${tokens.totalCompletionTokens} total=${tokens.totalTokens}`,
+      );
+    }
+
+    return lines;
+  }
+
+  private clearRenderedArea() {
+    if (!this.isInteractive || this.renderedLines <= 0) return;
+
+    // 将光标移动到渲染块的起始行
+    process.stdout.write(`\u001b[${this.renderedLines}F`);
+    for (let i = 0; i < this.renderedLines; i += 1) {
+      // 清除当前行并换行到下一行
+      process.stdout.write('\u001b[2K\r\n');
+    }
+    // 回到块的起始位置
+    process.stdout.write(`\u001b[${this.renderedLines}F`);
+    this.renderedLines = 0;
+  }
+
+  private render() {
+    const lines = this.buildLines();
+
+    if (this.isInteractive) {
+      // 将光标移到当前块顶部并清空旧内容
+      if (this.renderedLines > 0) {
+        process.stdout.write(`\u001b[${this.renderedLines}F`);
+      }
+      for (let i = 0; i < this.renderedLines; i += 1) {
+        process.stdout.write('\u001b[2K\r\n');
+      }
+      if (this.renderedLines > 0) {
+        process.stdout.write(`\u001b[${this.renderedLines}F`);
+      }
+
+      // 写入新内容
+      for (const line of lines) {
+        process.stdout.write('\u001b[2K'); // 清当前行
+        process.stdout.write(line + '\n');
+      }
+
+      this.renderedLines = lines.length;
+    } else {
+      // 非交互终端：不做覆盖，仅输出一次最新快照，避免光标控制符干扰日志采集。
+      for (const line of lines) {
+        process.stdout.write(line + '\n');
+      }
+      this.renderedLines = 0;
+    }
   }
 }
 
-export const progressBar = new ProgressBar();
+export const cliRenderer = new CliMultiSectionRenderer();
 
 export async function confirm(message: string, defaultAnswer: boolean = false): Promise<boolean> {
   const { answer } = await inquirer.prompt([

@@ -8,11 +8,13 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import { startMockOpenAIServer } from '../../utils/mock-openai-server';
 import { createTestProject, mkdtemp } from '../../utils/create-test-project';
+import { createTestConfigInDir } from '../../utils/test-config-helper';
 
 const execAsync = promisify(exec);
 
 describe('Skill 部署集成测试 (V23-SKILL)', () => {
   let testDir: string;
+  let tempHome: string;
   let mock: { baseUrl: string; close: () => Promise<void> };
   const repoRoot = path.join(__dirname, '../../../');
 
@@ -22,7 +24,13 @@ describe('Skill 部署集成测试 (V23-SKILL)', () => {
 
   beforeEach(async () => {
     testDir = mkdtemp('code-analyze-skill');
+    tempHome = mkdtemp('code-analyze-skill-config');
     mock = await startMockOpenAIServer();
+    await createTestConfigInDir(tempHome, {
+      llmBaseUrl: mock.baseUrl,
+      llmApiKey: 'test',
+      llmModel: 'mock',
+    });
     await createTestProject(testDir, {
       files: ['src/index.ts'],
       directories: ['src'],
@@ -32,12 +40,15 @@ describe('Skill 部署集成测试 (V23-SKILL)', () => {
   afterEach(async () => {
     await mock.close();
     await fs.remove(testDir).catch(() => {});
+    await fs.remove(tempHome).catch(() => {});
   });
+
+  const execEnv = () => ({ HOME: tempHome, USERPROFILE: tempHome });
 
   it('UT-V23-SKILL-001: 默认 providers 下应生成 .agents/skills/code-query 和 .claude/skills/code-query', async () => {
     await execAsync(
-      `node dist/cli.js analyze --path "${testDir}" --mode full --force --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
-      { cwd: repoRoot }
+      `node dist/cli.js analyze --path "${testDir}" --mode full --force -c "${path.join(tempHome, '.config', 'code-analyze', 'config.yaml')}" --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
+      { cwd: repoRoot, env: { ...process.env, ...execEnv() } }
     );
 
     const agentsDir = path.join(testDir, '.agents', 'skills', 'code-query');
@@ -55,8 +66,8 @@ describe('Skill 部署集成测试 (V23-SKILL)', () => {
 
   it('UT-V23-SKILL-002: SKILL.md 应包含 name/code-query、description、compatibility 及正文章节', async () => {
     await execAsync(
-      `node dist/cli.js analyze --path "${testDir}" --mode full --force --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
-      { cwd: repoRoot }
+      `node dist/cli.js analyze --path "${testDir}" --mode full --force -c "${path.join(tempHome, '.config', 'code-analyze', 'config.yaml')}" --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
+      { cwd: repoRoot, env: { ...process.env, ...execEnv() } }
     );
 
     const skillMdPath = path.join(testDir, '.agents', 'skills', 'code-query', 'SKILL.md');
@@ -69,8 +80,8 @@ describe('Skill 部署集成测试 (V23-SKILL)', () => {
 
   it('UT-V23-SKILL-003: resolve-config.json 应包含 indexFilePath 且指向存在文件', async () => {
     await execAsync(
-      `node dist/cli.js analyze --path "${testDir}" --mode full --force --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
-      { cwd: repoRoot }
+      `node dist/cli.js analyze --path "${testDir}" --mode full --force -c "${path.join(tempHome, '.config', 'code-analyze', 'config.yaml')}" --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
+      { cwd: repoRoot, env: { ...process.env, ...execEnv() } }
     );
 
     const configPath = path.join(testDir, '.agents', 'skills', 'code-query', 'resolve-config.json');
@@ -81,8 +92,8 @@ describe('Skill 部署集成测试 (V23-SKILL)', () => {
 
   it('UT-V23-SKILL-007: --no-skills 应不生成 Skill 目录', async () => {
     await execAsync(
-      `node dist/cli.js analyze --path "${testDir}" --mode full --force --no-skills --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
-      { cwd: repoRoot }
+      `node dist/cli.js analyze --path "${testDir}" --mode full --force -c "${path.join(tempHome, '.config', 'code-analyze', 'config.yaml')}" --no-skills --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
+      { cwd: repoRoot, env: { ...process.env, ...execEnv() } }
     );
 
     const agentsDir = path.join(testDir, '.agents', 'skills', 'code-query');
@@ -93,8 +104,8 @@ describe('Skill 部署集成测试 (V23-SKILL)', () => {
 
   it('UT-V23-SCRIPT-001/008: 独立脚本查询与 CLI resolve 输出一致', async () => {
     await execAsync(
-      `node dist/cli.js analyze --path "${testDir}" --mode full --force --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
-      { cwd: repoRoot }
+      `node dist/cli.js analyze --path "${testDir}" --mode full --force -c "${path.join(tempHome, '.config', 'code-analyze', 'config.yaml')}" --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
+      { cwd: repoRoot, env: { ...process.env, ...execEnv() } }
     );
 
     const skillDir = path.join(testDir, '.agents', 'skills', 'code-query');
@@ -103,8 +114,8 @@ describe('Skill 部署集成测试 (V23-SKILL)', () => {
 
     const { stdout: scriptOut } = await execAsync(`node "${scriptPath}" "${absPath}"`, { cwd: skillDir });
     const { stdout: cliOut } = await execAsync(
-      `node dist/cli.js resolve "${absPath}" --project "${testDir}"`,
-      { cwd: repoRoot }
+      `node dist/cli.js resolve "${absPath}" --project "${testDir}" -c "${path.join(tempHome, '.config', 'code-analyze', 'config.yaml')}"`,
+      { cwd: repoRoot, env: { ...process.env, ...execEnv() } }
     );
 
     expect(scriptOut.trim()).toBe(cliOut.trim());

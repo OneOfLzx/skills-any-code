@@ -5,15 +5,27 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as os from 'os';
 import { startMockOpenAIServer } from '../../utils/mock-openai-server';
+import { createTestConfig } from '../../utils/test-config-helper';
 
 describe('CLI 多语言解析测试 (UT-CLI-*)', () => {
   let testDir: string;
+  let configPath: string;
+  let configTempDir: string;
   let mock: { baseUrl: string; close: () => Promise<void> };
   const repoRoot = path.join(__dirname, '../../../');
 
   beforeEach(async () => {
     testDir = await fs.mkdtemp(path.join(os.tmpdir(), 'code-analyze-test-'));
     mock = await startMockOpenAIServer();
+    const { configPath: cp, tempDir: td } = await createTestConfig({
+      llmBaseUrl: mock.baseUrl,
+      llmApiKey: 'test',
+      llmModel: 'mock',
+      cacheEnabled: false,
+      cacheMaxSizeMb: 0,
+    });
+    configPath = cp;
+    configTempDir = td;
     // 确保 dist/cli.js 存在
     await execAsync('npm run build', { cwd: repoRoot });
   });
@@ -21,6 +33,7 @@ describe('CLI 多语言解析测试 (UT-CLI-*)', () => {
   afterEach(async () => {
     await mock.close();
     await fs.remove(testDir);
+    await fs.remove(configTempDir).catch(() => {});
   });
 
   /**
@@ -35,7 +48,7 @@ describe('CLI 多语言解析测试 (UT-CLI-*)', () => {
     await fs.writeFile(path.join(testDir, 'main.go'), 'package main\nimport "fmt"\nfunc main() { fmt.Println("Hello Go") }');
 
     const { stdout, stderr } = await execAsync(
-      `node dist/cli.js analyze --path "${testDir}" --mode full --force --log-level info --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
+      `node dist/cli.js analyze --path "${testDir}" --mode full --force --log-level info -c "${configPath}" --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
       { cwd: repoRoot }
     );
     expect(stderr).toBe('');
@@ -68,7 +81,7 @@ describe('CLI 多语言解析测试 (UT-CLI-*)', () => {
     await fs.writeFile(path.join(testDir, 'src/b.ts'), 'export const b = 2;', 'utf-8');
 
     await execAsync(
-      `node dist/cli.js analyze --path "${testDir}" --mode full --force --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
+      `node dist/cli.js analyze --path "${testDir}" --mode full --force -c "${configPath}" --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
       { cwd: repoRoot }
     );
 
@@ -102,7 +115,7 @@ describe('CLI 多语言解析测试 (UT-CLI-*)', () => {
     await fs.writeFile(path.join(testDir, 'run'), '#!/bin/bash\necho "Running script"\nnpm start');
 
     const { stdout, stderr } = await execAsync(
-      `node dist/cli.js analyze --path ${testDir} --mode full --force --log-level info --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
+      `node dist/cli.js analyze --path ${testDir} --mode full --force --log-level info -c "${configPath}" --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
       { cwd: repoRoot }
     );
     expect(stderr).toBe('');

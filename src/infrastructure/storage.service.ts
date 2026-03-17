@@ -18,11 +18,26 @@ export class LocalStorageService implements IStorageService {
     return getStoragePath(this.projectRoot, this.customOutputDir);
   }
 
+  /**
+   * 内部结构化 JSON 存储目录：
+   * - 与结果目录物理分离，避免在 .code-analyze-result 中产生 per-file/per-dir JSON；
+   * - 路径规则：若结果目录为 "<project>/.code-analyze-result"，
+   *   则内部目录为 "<project>/.code-analyze-internal"。
+   *
+   * 注意：内部目录不随自定义 outputDir 变化，避免因动态命名导致扫描/黑名单排除失效。
+   */
+  private getInternalStateRoot(): string {
+    return path.resolve(this.projectRoot, '.code-analyze-internal')
+  }
+
   async saveFileAnalysis(projectSlug: string, filePath: string, data: FileAnalysis): Promise<void> {
     try {
       const storageRoot = this.getStorageRoot()
+      const internalRoot = this.getInternalStateRoot()
       const outputPath = getFileOutputPath(storageRoot, filePath)
       await fs.ensureDir(path.dirname(outputPath))
+      const internalJsonPath = getFileOutputPath(internalRoot, filePath).replace(/\.md$/i, '.json')
+      await fs.ensureDir(path.dirname(internalJsonPath))
 
       const relativePath = path.relative(this.projectRoot, filePath) || data.path
       const fileGitCommitId = data.fileGitCommitId ?? 'N/A'
@@ -86,9 +101,8 @@ export class LocalStorageService implements IStorageService {
 
       await fs.writeFile(outputPath, content, 'utf-8')
 
-      // 同步写入 JSON 结构，供增量决策与查询使用
-      const jsonPath = outputPath.replace(/\.md$/i, '.json')
-      await fs.writeJson(jsonPath, data, { spaces: 2 })
+      // 同步写入 JSON 结构到内部目录，供增量决策与查询使用（不污染结果目录）
+      await fs.writeJson(internalJsonPath, data, { spaces: 2 })
     } catch (e) {
       throw new AppError(ErrorCode.STORAGE_WRITE_FAILED, '保存文件分析结果失败', e)
     }
@@ -97,8 +111,11 @@ export class LocalStorageService implements IStorageService {
   async saveDirectoryAnalysis(projectSlug: string, dirPath: string, data: DirectoryAnalysis): Promise<void> {
     try {
       const storageRoot = this.getStorageRoot()
+      const internalRoot = this.getInternalStateRoot()
       const outputPath = getDirOutputPath(storageRoot, dirPath)
       await fs.ensureDir(path.dirname(outputPath))
+      const internalJsonPath = getDirOutputPath(internalRoot, dirPath).replace(/\.md$/i, '.json')
+      await fs.ensureDir(path.dirname(internalJsonPath))
 
       const relativePath = path.relative(this.projectRoot, dirPath) || data.path
       const childrenDirs = data.structure.filter(item => item.type === 'directory')
@@ -154,8 +171,8 @@ export class LocalStorageService implements IStorageService {
 
       await fs.writeFile(outputPath, content, 'utf-8')
 
-      const jsonPath = outputPath.replace(/\.md$/i, '.json')
-      await fs.writeJson(jsonPath, data, { spaces: 2 })
+      // 目录级结构化结果仅写入内部目录
+      await fs.writeJson(internalJsonPath, data, { spaces: 2 })
     } catch (e) {
       throw new AppError(ErrorCode.STORAGE_WRITE_FAILED, '保存目录分析结果失败', e)
     }
@@ -174,9 +191,8 @@ export class LocalStorageService implements IStorageService {
 
   async getFileAnalysis(projectSlug: string, filePath: string, type: 'summary' | 'full' | 'diagram'): Promise<FileAnalysis | null> {
     try {
-      const storageRoot = this.getStorageRoot()
-      const mdPath = getFileOutputPath(storageRoot, filePath)
-      const jsonPath = mdPath.replace(/\.md$/i, '.json')
+      const internalRoot = this.getInternalStateRoot()
+      const jsonPath = getFileOutputPath(internalRoot, filePath).replace(/\.md$/i, '.json')
       if (!(await fs.pathExists(jsonPath))) {
         return null
       }
@@ -189,9 +205,8 @@ export class LocalStorageService implements IStorageService {
 
   async getDirectoryAnalysis(projectSlug: string, dirPath: string, type: 'summary' | 'full' | 'diagram'): Promise<DirectoryAnalysis | null> {
     try {
-      const storageRoot = this.getStorageRoot()
-      const mdPath = getDirOutputPath(storageRoot, dirPath)
-      const jsonPath = mdPath.replace(/\.md$/i, '.json')
+      const internalRoot = this.getInternalStateRoot()
+      const jsonPath = getDirOutputPath(internalRoot, dirPath).replace(/\.md$/i, '.json')
       if (!(await fs.pathExists(jsonPath))) {
         return null
       }

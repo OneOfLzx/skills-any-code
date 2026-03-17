@@ -12,6 +12,7 @@ import {
   LLMConfig,
   AnalysisObject,
   ObjectResultMeta,
+  TokenUsageStats,
 } from '../../common/types'
 import { AppError, ErrorCode } from '../../common/errors'
 import { logger } from '../../common/logger'
@@ -21,6 +22,7 @@ import { LLMUsageTracker } from '../../infrastructure/llm/llm.usage.tracker'
 import { CodeSplitter } from '../../infrastructure/splitter/code.splitter'
 import { FileHashCache } from '../../infrastructure/cache/file.hash.cache'
 import { LLMAnalysisService } from '../../application/services/llm.analysis.service'
+import { WorkerPoolService } from '../../infrastructure/worker-pool/worker-pool.service'
 import os from 'os'
 
 export class AnalysisService implements IAnalysisService {
@@ -34,10 +36,11 @@ export class AnalysisService implements IAnalysisService {
     private blacklistService: IBlacklistService,
     private projectSlug: string,
     private currentCommit: string,
-    private llmConfig: LLMConfig
+    private llmConfig: LLMConfig,
+    private readonly onTokenUsageSnapshot?: (stats: TokenUsageStats) => void,
   ) {
-    // 初始化LLM相关服务
-    this.tracker = new LLMUsageTracker()
+    // 初始化LLM相关服务（附带 Token 用量限制，防止单次解析占用过多资源）
+    this.tracker = new LLMUsageTracker(this.onTokenUsageSnapshot, llmConfig.max_total_tokens)
     const llmClient = new OpenAIClient(llmConfig, this.tracker);
     const fileSplitter = new CodeSplitter(llmClient);
     const homeDir = os.homedir()
@@ -65,8 +68,11 @@ export class AnalysisService implements IAnalysisService {
       if (depth >= 1 && currentDepth > depth) return
       const entries = await fs.readdir(dirPath, { withFileTypes: true })
       const valid = entries.filter(entry => {
-        // 解析输出目录一律跳过，避免 .code-analyze-result 被再次解析
-        if (entry.isDirectory() && entry.name === '.code-analyze-result') {
+        // 解析输出目录与内部状态目录一律跳过，避免 .code-analyze-result/.code-analyze-internal 被再次解析
+        if (
+          entry.isDirectory() &&
+          (entry.name === '.code-analyze-result' || entry.name === '.code-analyze-internal')
+        ) {
           return false
         }
         const fullPath = path.join(dirPath, entry.name)
@@ -138,172 +144,343 @@ export class AnalysisService implements IAnalysisService {
       }
     }
 
-    // 递归遍历目录
-    const traverseDir = async (dirPath: string, currentDepth: number): Promise<DirectoryAnalysis> => {
-      // depth: -1 或 undefined 表示不限制深度；仅当 depth >= 1 时才启用限制
-      if (params.depth !== undefined && params.depth >= 1 && currentDepth > params.depth) {
-        return {
-          type: 'directory',
-          path: path.relative(params.projectRoot, dirPath),
-          name: path.basename(dirPath),
-          description: '超出解析深度限制',
-          summary: '超出解析深度限制',
-          childrenDirsCount: 0,
-          childrenFilesCount: 0,
-          structure: [],
-          lastAnalyzedAt: new Date().toISOString(),
-          commitHash: this.currentCommit
-        }
-      }
-
-      const entries = await fs.readdir(dirPath, { withFileTypes: true })
-      const childrenResults: Array<FileAnalysis | DirectoryAnalysis> = []
-
-      const validEntries = entries.filter(entry => {
-        if (entry.isDirectory() && entry.name === '.code-analyze-result') {
-          return false
-        }
-        const fullPath = path.join(dirPath, entry.name)
-        const relativePath = path.relative(params.projectRoot, fullPath)
-        const key = entry.isDirectory() ? `${relativePath}/` : relativePath
-        return !this.blacklistService.isIgnored(key)
-      })
-
-      // 并行处理文件
-      const fileTasks = validEntries
-        .filter(entry => entry.isFile())
-        .map(async entry => {
-          const filePath = path.join(dirPath, entry.name)
-          const relativePath = path.relative(params.projectRoot, filePath)
-          const fileObj: AnalysisObject = { type: 'file', path: relativePath }
-          params.onObjectPlanned?.(fileObj)
-          params.onObjectStarted?.(fileObj)
-
-          try {
-            const content = await fs.readFile(filePath, 'utf-8')
-            const fileHash = createHash('sha256').update(content).digest('hex')
-
-            // 计算文件级 git 元信息（设计文档 10.3.2 / 13.8），在非 git 场景下安全降级
-            const hasGitMeta =
-              typeof (this.gitService as any).getFileLastCommit === 'function' &&
-              typeof (this.gitService as any).isFileDirty === 'function'
-            const fileGitCommitId = hasGitMeta
-              ? await this.gitService.getFileLastCommit(params.projectRoot, relativePath)
-              : null
-            const isDirty = hasGitMeta
-              ? await this.gitService.isFileDirty(params.projectRoot, relativePath)
-              : false
-
-            const parseResult = await this.llmAnalysisService.analyzeFile(filePath, content, fileHash)
-            
-            const fileResult: FileAnalysis = {
-              ...parseResult,
-              path: relativePath,
-              commitHash: this.currentCommit,
-              fileGitCommitId: fileGitCommitId ?? undefined,
-              isDirtyWhenAnalyzed: isDirty,
-              fileHashWhenAnalyzed: fileHash
-            }
-
-            await this.storageService.saveFileAnalysis(this.projectSlug, relativePath, fileResult)
-            completedFiles.push(relativePath)
-            params.onObjectCompleted?.(fileObj, { status: 'parsed' })
-            const sourceAbsPath = path.resolve(params.projectRoot, relativePath)
-            const resultAbsPath = path.resolve(storageRoot, getFileOutputPath(storageRoot, relativePath))
-            indexEntries.push({ sourcePath: sourceAbsPath, resultPath: resultAbsPath, type: 'file' })
-            return fileResult
-          } catch (e: unknown) {
-            errors.push({ path: relativePath, message: (e as Error).message })
-            const meta: ObjectResultMeta = { status: 'failed', reason: (e as Error).message }
-            params.onObjectCompleted?.(fileObj, meta)
-            return null
-          }
-        })
-
-      // 串行处理子目录（避免IO冲突）
-      const dirTasks = validEntries
-        .filter(entry => entry.isDirectory())
-        .map(async entry => {
-          const subDirPath = path.join(dirPath, entry.name)
-          const relativePath = path.relative(params.projectRoot, subDirPath)
-          const dirObj: AnalysisObject = { type: 'directory', path: relativePath }
-          params.onObjectPlanned?.(dirObj)
-          params.onObjectStarted?.(dirObj)
-          const dirResult = await traverseDir(subDirPath, currentDepth + 1)
-          childrenResults.push(dirResult)
-          params.onObjectCompleted?.(dirObj, { status: 'parsed' })
-          return dirResult
-        })
-
-      // 等待所有文件任务完成
-      const fileResults = await Promise.all(fileTasks)
-      childrenResults.push(...fileResults.filter(Boolean) as FileAnalysis[])
-
-      // 等待所有目录任务完成
-      await Promise.all(dirTasks)
-
-      // 生成目录分析结果（目录功能描述与概述通过 LLM 两步协议生成）
-      const dirRelativePath = path.relative(params.projectRoot, dirPath)
-      const dirName = path.basename(dirPath)
-
-      const fileChildren = childrenResults.filter(child => child.type === 'file') as FileAnalysis[]
-      const dirChildren = childrenResults.filter(child => child.type === 'directory') as DirectoryAnalysis[]
-
-      // 构造目录 LLM 所需的子项精简信息
-      const childrenDirsPayload = dirChildren.map(d => ({
-        name: d.name,
-        summary: d.summary,
-        description: d.description
-      }))
-      const childrenFilesPayload = fileChildren.map(f => ({
-        name: f.name,
-        summary: f.summary,
-        description: f.description ?? f.summary
-      }))
-
-      let description = ''
-      let summary = ''
-      try {
-        const dirResultFromLLM = await this.llmAnalysisService.analyzeDirectory(childrenDirsPayload, childrenFilesPayload)
-        description = dirResultFromLLM.description
-        summary = dirResultFromLLM.summary
-      } catch (e) {
-        // LLM 失败时回退到简易的程序生成描述，避免目录结果缺失
-        const segments = dirRelativePath.split(/[/\\]/).filter(Boolean)
-        const semanticPath = segments.length > 0 ? segments.join(' / ') : dirName
-        const fileCount = fileChildren.length
-        const dirCount = dirChildren.length
-        const fallback = `该目录「${dirName}」位于路径「${semanticPath}」，包含 ${fileCount} 个文件和 ${dirCount} 个子目录，用于组织与当前模块相关的源代码与子模块。`
-        description = fallback
-        summary = fallback
-      }
-
-      const dirResult: DirectoryAnalysis = {
-        type: 'directory',
-        path: dirRelativePath,
-        name: dirName,
-        description,
-        summary,
-        childrenDirsCount: dirChildren.length,
-        childrenFilesCount: fileChildren.length,
-        structure: childrenResults.map(child => ({
-          name: child.name,
-          type: child.type,
-          description: child.summary
-        })),
-        lastAnalyzedAt: new Date().toISOString(),
-        commitHash: this.currentCommit
-      }
-
-      await this.storageService.saveDirectoryAnalysis(this.projectSlug, dirRelativePath, dirResult)
-      completedDirs.push(dirRelativePath)
-      const dirSourceAbsPath = path.resolve(params.projectRoot, dirRelativePath)
-      const dirResultAbsPath = path.resolve(storageRoot, getDirOutputPath(storageRoot, dirRelativePath))
-      indexEntries.push({ sourcePath: dirSourceAbsPath, resultPath: dirResultAbsPath, type: 'directory' })
-      return dirResult
+    type DirNode = {
+      absPath: string
+      relPath: string
+      depth: number
+      childDirs: string[]
+      childFiles: string[]
     }
 
-    await traverseDir(params.projectRoot, 1)
+    const depthEnabled = params.depth !== undefined && params.depth >= 1
+    const maxDepth = depthEnabled ? (params.depth as number) : Number.POSITIVE_INFINITY
+
+    // 第一步：扫描工程，生成全量任务图（文件解析任务 + 目录聚合任务）
+    const dirNodes = new Map<string, DirNode>()
+    const fileAbsByRel = new Map<string, string>()
+
+    const rootRel = '.'
+    dirNodes.set(rootRel, {
+      absPath: params.projectRoot,
+      relPath: rootRel,
+      depth: 1,
+      childDirs: [],
+      childFiles: [],
+    })
+
+    const queue: Array<{ rel: string; abs: string; depth: number }> = [{ rel: rootRel, abs: params.projectRoot, depth: 1 }]
+
+    while (queue.length > 0) {
+      const current = queue.shift()!
+      const node = dirNodes.get(current.rel)!
+
+      // depth 限制：到达上限时不再下探，但目录自身仍会作为聚合对象（children 为空）
+      if (current.depth > maxDepth) {
+        continue
+      }
+
+      const entries = await fs.readdir(current.abs, { withFileTypes: true })
+      const validEntries = entries
+        .filter(entry => {
+          if (
+            entry.isDirectory() &&
+            (entry.name === '.code-analyze-result' || entry.name === '.code-analyze-internal')
+          ) {
+            return false
+          }
+          const fullPath = path.join(current.abs, entry.name)
+          const relativePath = path.relative(params.projectRoot, fullPath)
+          const key = entry.isDirectory() ? `${relativePath}/` : relativePath
+          return !this.blacklistService.isIgnored(key)
+        })
+        .sort((a, b) => a.name.localeCompare(b.name))
+
+      for (const entry of validEntries) {
+        const fullPath = path.join(current.abs, entry.name)
+        const relPath = path.relative(params.projectRoot, fullPath) || entry.name
+
+        if (entry.isFile()) {
+          node.childFiles.push(relPath)
+          fileAbsByRel.set(relPath, fullPath)
+        } else if (entry.isDirectory()) {
+          node.childDirs.push(relPath)
+          const childDepth = current.depth + 1
+          dirNodes.set(relPath, {
+            absPath: fullPath,
+            relPath: relPath,
+            depth: childDepth,
+            childDirs: [],
+            childFiles: [],
+          })
+          // 仍按扫描阶段的先后顺序入队，保证任务队列“最开始就确定”且可复现
+          queue.push({ rel: relPath, abs: fullPath, depth: childDepth })
+        }
+      }
+    }
+
+    // 第二步：预排序任务队列（拓扑序 / 叶子优先）
+    const plannedFiles = Array.from(fileAbsByRel.keys()).sort((a, b) => a.localeCompare(b))
+    const plannedDirs = Array.from(dirNodes.values())
+      .sort((a, b) => {
+        // 深度更深的目录先聚合（叶子优先）；同深度按路径稳定排序
+        if (b.depth !== a.depth) return b.depth - a.depth
+        return a.relPath.localeCompare(b.relPath)
+      })
+      .map(d => d.relPath)
+
+    // “一开始就排好所有对象任务”的生命周期回调（用于 UI / 统计）
+    for (const f of plannedFiles) {
+      params.onObjectPlanned?.({ type: 'file', path: f })
+    }
+    for (const d of plannedDirs) {
+      params.onObjectPlanned?.({ type: 'directory', path: d })
+    }
+
+    // 第三步：线程池消费队列（worker 永远只执行“可执行任务”，避免等待占 worker）
+    const workerPool = new WorkerPoolService(this.llmConfig, params.concurrency)
+
+    const fileResults = new Map<string, FileAnalysis>()
+    const dirResults = new Map<string, DirectoryAnalysis>()
+    const startedDirs = new Set<string>()
+
+    const ensureDirAndAncestorsStarted = (relPath: string) => {
+      // 针对文件或目录路径，确保其所有祖先目录（含自身目录节点）在首次参与解析时即进入 active 集合，
+      // 以便目录对象的 active 生命周期覆盖其子对象解析全过程（满足深层目录并发退化相关需求）。
+      let current = path.dirname(relPath) || '.'
+      // path.dirname('.') === '.'，确保根目录也会被处理一次
+      while (current && current !== '.' && !dirNodes.has(current)) {
+        const parent = path.dirname(current)
+        if (!parent || parent === current) break
+        current = parent
+      }
+
+      while (current) {
+        if (dirNodes.has(current) && !startedDirs.has(current)) {
+          const dirObj: AnalysisObject = { type: 'directory', path: current }
+          params.onObjectStarted?.(dirObj)
+          startedDirs.add(current)
+        }
+        if (current === '.') break
+        const parent = path.dirname(current)
+        if (!parent || parent === current) break
+        current = parent
+      }
+    }
+
+    try {
+      // 目录对象作为长生命周期聚合对象：在文件解析开始前先进入 active 集合，
+      // 其 completed 将在对应聚合任务完成后触发。
+      for (const dirRel of plannedDirs) {
+        if (!startedDirs.has(dirRel)) {
+          const dirObj: AnalysisObject = { type: 'directory', path: dirRel }
+          params.onObjectStarted?.(dirObj)
+          startedDirs.add(dirRel)
+        }
+      }
+
+      const filePromises = plannedFiles.map(async relPath => {
+        const fileObj: AnalysisObject = { type: 'file', path: relPath }
+        // 确保所属目录链在首次处理子文件前就进入 active 集合，
+        // 使目录对象的 active 时长覆盖子对象解析阶段。
+        ensureDirAndAncestorsStarted(relPath)
+        params.onObjectStarted?.(fileObj)
+        try {
+          const absPath = fileAbsByRel.get(relPath)!
+          const content = await fs.readFile(absPath, 'utf-8')
+          const fileHash = createHash('sha256').update(content).digest('hex')
+
+          const hasGitMeta =
+            typeof (this.gitService as any).getFileLastCommit === 'function' &&
+            typeof (this.gitService as any).isFileDirty === 'function'
+          const fileGitCommitId = hasGitMeta ? await this.gitService.getFileLastCommit(params.projectRoot, relPath) : null
+          const isDirty = hasGitMeta ? await this.gitService.isFileDirty(params.projectRoot, relPath) : false
+
+          const workerRes: any = await workerPool.submitFileAnalysisTask(absPath, content, fileHash)
+          const parseResult: FileAnalysis = workerRes?.analysis ?? workerRes
+          const usage = workerRes?.usage
+          // 汇总 worker 返回的 token 用量到主线程 tracker，用于全局上限保护与 UI 展示
+          if (usage) {
+            this.tracker.addTotals(usage)
+          }
+
+          const fileResult: FileAnalysis = {
+            ...parseResult,
+            path: relPath,
+            commitHash: this.currentCommit,
+            fileGitCommitId: fileGitCommitId ?? undefined,
+            isDirtyWhenAnalyzed: isDirty,
+            fileHashWhenAnalyzed: fileHash,
+          }
+
+          await this.storageService.saveFileAnalysis(this.projectSlug, relPath, fileResult)
+          completedFiles.push(relPath)
+          fileResults.set(relPath, fileResult)
+          params.onObjectCompleted?.(fileObj, { status: 'parsed' })
+          const sourceAbsPath = path.resolve(params.projectRoot, relPath)
+          const resultAbsPath = path.resolve(storageRoot, getFileOutputPath(storageRoot, relPath))
+          indexEntries.push({ sourcePath: sourceAbsPath, resultPath: resultAbsPath, type: 'file' })
+        } catch (e: any) {
+          if (e instanceof AppError && e.code === ErrorCode.LLM_TOKEN_LIMIT_EXCEEDED) {
+            throw e
+          }
+          errors.push({ path: relPath, message: (e as Error).message })
+          params.onObjectCompleted?.(fileObj, { status: 'failed', reason: (e as Error).message })
+        }
+      })
+
+      await Promise.all(filePromises)
+
+      // 目录聚合任务：按“叶子优先”深度分组，同一深度内并发执行；
+      // 每个目录仅在依赖结果已可用时运行，且其 active 生命周期覆盖子对象解析阶段。
+      const dirsByDepth = new Map<number, string[]>()
+      for (const dirRel of plannedDirs) {
+        const node = dirNodes.get(dirRel)
+        if (!node) continue
+        const arr = dirsByDepth.get(node.depth) ?? []
+        arr.push(dirRel)
+        dirsByDepth.set(node.depth, arr)
+      }
+
+      const sortedDepths = Array.from(dirsByDepth.keys()).sort((a, b) => b - a)
+
+      for (const depth of sortedDepths) {
+        const batch = dirsByDepth.get(depth)!
+        await Promise.all(
+          batch.map(async dirRel => {
+            const dirObj: AnalysisObject = { type: 'directory', path: dirRel }
+
+            const node = dirNodes.get(dirRel)
+            if (!node) {
+              params.onObjectCompleted?.(dirObj, { status: 'skipped', reason: 'dir node not found' })
+              return
+            }
+
+            // 若此前因无子文件/子目录从未被启动，则在聚合阶段补充一次 started 回调。
+            if (!startedDirs.has(dirRel)) {
+              params.onObjectStarted?.(dirObj)
+              startedDirs.add(dirRel)
+            }
+
+            // depth 超限：输出占位目录结果（与旧逻辑一致）
+            if (node.depth > maxDepth) {
+              const placeholder: DirectoryAnalysis = {
+                type: 'directory',
+                path: dirRel,
+                name: path.basename(dirRel),
+                description: '超出解析深度限制',
+                summary: '超出解析深度限制',
+                childrenDirsCount: 0,
+                childrenFilesCount: 0,
+                structure: [],
+                lastAnalyzedAt: new Date().toISOString(),
+                commitHash: this.currentCommit,
+              }
+              await this.storageService.saveDirectoryAnalysis(this.projectSlug, dirRel, placeholder)
+              dirResults.set(dirRel, placeholder)
+              completedDirs.push(dirRel)
+              params.onObjectCompleted?.(dirObj, { status: 'parsed' })
+              const dirSourceAbsPath = path.resolve(params.projectRoot, dirRel)
+              const dirResultAbsPath = path.resolve(storageRoot, getDirOutputPath(storageRoot, dirRel))
+              indexEntries.push({ sourcePath: dirSourceAbsPath, resultPath: dirResultAbsPath, type: 'directory' })
+              return
+            }
+
+            const childResults: Array<FileAnalysis | DirectoryAnalysis> = []
+            for (const f of node.childFiles) {
+              const fr = fileResults.get(f)
+              if (fr) childResults.push(fr)
+            }
+            for (const d of node.childDirs) {
+              const dr = dirResults.get(d)
+              if (dr) childResults.push(dr)
+            }
+
+            const fileChildren = childResults.filter(c => c.type === 'file') as FileAnalysis[]
+            const dirChildren = childResults.filter(c => c.type === 'directory') as DirectoryAnalysis[]
+
+            const childrenDirsPayload = dirChildren.map(d => ({
+              name: d.name,
+              summary: d.summary,
+              description: d.description,
+            }))
+            const childrenFilesPayload = fileChildren.map(f => ({
+              name: f.name,
+              summary: f.summary,
+              description: f.description ?? f.summary,
+            }))
+
+            let description = ''
+            let summary = ''
+            try {
+              const llmRes: any = await workerPool.submitDirectoryAggregationTask(node.absPath, {
+                childrenDirs: childrenDirsPayload,
+                childrenFiles: childrenFilesPayload,
+              })
+              // 聚合 worker 返回的 token 用量到主线程 tracker，用于全局上限保护与 UI 展示
+              if (llmRes?.usage) {
+                this.tracker.addTotals(llmRes.usage)
+              }
+              description = llmRes.description
+              summary = llmRes.summary
+            } catch (e: any) {
+              if (e instanceof AppError && e.code === ErrorCode.LLM_TOKEN_LIMIT_EXCEEDED) {
+                throw e
+              }
+              const dirName = path.basename(dirRel)
+              const fileCount = fileChildren.length
+              const dirCount = dirChildren.length
+              const fallback = `该目录「${dirName}」包含 ${fileCount} 个文件和 ${dirCount} 个子目录，用于组织与当前模块相关的源代码与子模块。`
+              description = fallback
+              summary = fallback
+            }
+
+            const dirName = path.basename(dirRel)
+            const dirResult: DirectoryAnalysis = {
+              type: 'directory',
+              path: dirRel,
+              name: dirName,
+              description,
+              summary,
+              childrenDirsCount: dirChildren.length,
+              childrenFilesCount: fileChildren.length,
+              structure: childResults.map(child => ({
+                name: child.name,
+                type: child.type,
+                description: child.summary,
+              })),
+              lastAnalyzedAt: new Date().toISOString(),
+              commitHash: this.currentCommit,
+            }
+
+            await this.storageService.saveDirectoryAnalysis(this.projectSlug, dirRel, dirResult)
+            dirResults.set(dirRel, dirResult)
+            completedDirs.push(dirRel)
+            params.onObjectCompleted?.(dirObj, { status: 'parsed' })
+            const dirSourceAbsPath = path.resolve(params.projectRoot, dirRel)
+            const dirResultAbsPath = path.resolve(storageRoot, getDirOutputPath(storageRoot, dirRel))
+            indexEntries.push({ sourcePath: dirSourceAbsPath, resultPath: dirResultAbsPath, type: 'directory' })
+          }),
+        )
+      }
+    } catch (e: any) {
+      // 资源保护：一旦触发 token 上限，立刻取消所有 worker 并将错误上抛给应用层/CLI 做受控退出
+      if (typeof (workerPool as any).terminate === 'function') {
+        await (workerPool as any).terminate(true).catch(() => {})
+      } else {
+        workerPool.cancelAll()
+      }
+      if (e instanceof AppError && e.code === ErrorCode.LLM_TOKEN_LIMIT_EXCEEDED) {
+        throw e
+      }
+      throw e
+    } finally {
+      // 防御：确保线程池释放
+      if (typeof (workerPool as any).terminate === 'function') {
+        await (workerPool as any).terminate(true).catch(() => {})
+      } else {
+        workerPool.cancelAll()
+      }
+    }
 
     const duration = Date.now() - startTime
     const summaryPath = path.join(storageRoot, 'index.md')

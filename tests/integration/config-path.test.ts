@@ -39,25 +39,34 @@ describe('Config Path Integration Test (INT-CFG-*)', () => {
     await fs.remove(tempProjectDir);
   });
   
-  test('INT-CFG-001: 配置文件自动生成在用户目录而非项目目录', async () => {
+  test('INT-CFG-001: 先 init 创建配置后 load 验证路径在用户目录而非项目目录', async () => {
     process.chdir(tempProjectDir);
-    
+
+    await configManager.init();
     await configManager.load();
-    
+
     const expectedConfigPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
     const projectConfigPath = path.join(tempProjectDir, '~', '.code-analyze', 'config.yaml');
-    
+
     const homeConfigExists = await fs.pathExists(expectedConfigPath);
     expect(homeConfigExists).toBe(true);
-    
+
     const projectConfigExists = await fs.pathExists(projectConfigPath);
     expect(projectConfigExists).toBe(false);
   });
   
-  test('INT-CFG-002: CLI默认配置路径正确解析', async () => {
+  test('INT-CFG-002: 先 init 创建配置后 CLI config --list 正确解析', async () => {
     process.chdir(tempProjectDir);
-    
+
     const cliPath = path.join(__dirname, '../../dist/cli.js');
+    await execAsync(`node ${cliPath} init`, {
+      env: {
+        ...process.env,
+        HOME: tempHome,
+        USERPROFILE: tempHome
+      }
+    });
+
     await execAsync(`node ${cliPath} config --list`, {
       env: {
         ...process.env,
@@ -65,7 +74,7 @@ describe('Config Path Integration Test (INT-CFG-*)', () => {
         USERPROFILE: tempHome
       }
     });
-    
+
     const expectedConfigPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
     const homeConfigExists = await fs.pathExists(expectedConfigPath);
     expect(homeConfigExists).toBe(true);

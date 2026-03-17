@@ -14,6 +14,7 @@ import type {
   FileChunk,
   FileChunkAnalysis,
   AnalysisIndex,
+  TokenUsageStats,
 } from '../common/types'
 
 // ===== V2.3 黑名单服务接口 =====
@@ -107,8 +108,14 @@ export interface IWorkerPoolService {
     fileContent: string,
     fileHash: string,
     language?: string
-  ): Promise<FileAnalysis>
-  submitDirectoryAggregationTask(dirPath: string, childrenResults: Array<FileAnalysis | DirectoryAnalysis>): Promise<DirectoryAnalysis>
+  ): Promise<{ analysis: FileAnalysis; usage: TokenUsageStats }>
+  submitDirectoryAggregationTask(
+    dirPath: string,
+    payload: {
+      childrenDirs: Array<{ name: string; summary: string; description?: string }>
+      childrenFiles: Array<{ name: string; summary: string; description?: string }>
+    }
+  ): Promise<{ description: string; summary: string; usage: TokenUsageStats }>
   submitValidationTask(parentResult: DirectoryAnalysis, childResult: FileAnalysis | DirectoryAnalysis): Promise<{
     valid: boolean
     corrections?: Partial<FileAnalysis | DirectoryAnalysis>
@@ -117,6 +124,7 @@ export interface IWorkerPoolService {
   setConcurrency(concurrency: number): void
   waitAll(): Promise<void>
   cancelAll(): void
+  terminate(force?: boolean): Promise<void>
 }
 
 // LLM服务客户端接口

@@ -7,6 +7,13 @@ export interface AnalysisMetadata {
     branch: string
     analyzedAt: string
   }>
+  /**
+   * 非 Git 项目增量：文件快照（用于两次运行间的变更检测）。
+   * 仅记录 stat 级信息，避免全量读取文件内容。
+   *
+   * key 为相对 projectRoot 的文件路径（保持与运行时 path.relative 一致，可能含 \ 或 /）。
+   */
+  fileSnapshot?: Record<string, { mtimeMs: number; size: number }>
   analysisVersion: string
   analyzedFilesCount: number
   schemaVersion: string
@@ -224,6 +231,8 @@ export interface AnalyzeProjectCommandParams {
   onTotalKnown?: (total: number) => void
   /** 进度更新回调（done, total, current） */
   onProgress?: ProgressCallback
+  /** Token 使用快照回调：每次 LLM 调用后触发，用于 CLI UI 实时展示 Tokens 行 */
+  onTokenUsageSnapshot?: (stats: TokenUsageStats) => void
 }
 
 // 命令返回结果
@@ -316,6 +325,8 @@ export interface LLMConfig {
   base_url?: string;
   temperature: number;
   max_tokens: number;
+  /** 单次解析允许的累计 Token 上限，用于防止 OOM/费用爆炸；0 表示不限制 */
+  max_total_tokens: number;
   timeout: number;
   proxy?: string;
   max_retries: number;

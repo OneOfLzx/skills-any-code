@@ -81,24 +81,23 @@ describe('LLM 配置测试', () => {
   /**
    * UT-LLM-003: LLM配置参数合法性校验
    */
-  test('UT-LLM-003: temperature参数超出范围时校验失败', async () => {
-    await configManager.load();
-    // 当前 ConfigSchema 对 temperature 的范围为 0-2（与需求文档0-1不同），这里验证 schema 生效即可
-    // 超出2会在 load/parse 时抛错
+  test('UT-LLM-003: temperature参数超出范围时解析失败并回退到默认配置', async () => {
+    // 先创建配置文件再 load（V2.5 不自动创建）
     await fs.ensureDir(path.dirname(configPath));
     await fs.writeFile(
       configPath,
       yaml.dump({
         llm: {
           api_key: 'k',
+          base_url: 'http://x',
+          model: 'x',
           temperature: 3.0,
         },
       }),
       'utf-8'
     );
-    (configManager as any).config = null;
-    const cfg = await configManager.load();
-    // 当前实现：配置文件解析失败会回退到默认配置（并记录warn）
+    // ConfigSchema 对 temperature 的范围为 0-2，超出时解析失败并回退默认（见 config.ts）
+    const cfg = await configManager.load(configPath);
     expect(cfg.llm.temperature).toBeLessThanOrEqual(2);
   });
 });

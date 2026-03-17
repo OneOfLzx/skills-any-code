@@ -10,16 +10,24 @@ import * as path from 'path';
 import * as os from 'os';
 import { startMockOpenAIServer } from '../../utils/mock-openai-server';
 import { createTestProject, mkdtemp } from '../../utils/create-test-project';
+import { createTestConfig } from '../../utils/test-config-helper';
 
 const execAsync = promisify(exec);
 
-/** 从 stdout 中提取所有「已处理: a/b」的 (a,b) 序列 */
+// 去除 ANSI 颜色，避免终端配色影响正则匹配
+function stripAnsi(input: string): string {
+  // eslint-disable-next-line no-control-regex
+  return input.replace(/\u001b\[[0-9;]*m/g, '');
+}
+
+/** 从 stdout 中提取所有「已处理: a/b 文件/对象」的 (a,b) 序列 */
 function parseProgressLines(stdout: string): Array<{ done: number; total: number }> {
+  const plain = stripAnsi(stdout);
   const results: Array<{ done: number; total: number }> = [];
-  // 格式：已处理: {value}/{total} 文件
-  const re = /已处理:\s*(\d+)\/(\d+)\s*文件/g;
+  // 格式：已处理: {value}/{total} 文件/对象
+  const re = /已处理:\s*(\d+)\/(\d+)\s*(?:文件|对象)/g;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(stdout)) !== null) {
+  while ((m = re.exec(plain)) !== null) {
     results.push({ done: parseInt(m[1], 10), total: parseInt(m[2], 10) });
   }
   return results;
@@ -28,6 +36,8 @@ function parseProgressLines(stdout: string): Array<{ done: number; total: number
 describe('12.3.1 进度条与对象级进度 (UT-TERM-001 / ST-V22-PROG-001)', () => {
   let testDir: string;
   let mock: { baseUrl: string; close: () => Promise<void> };
+  let configPath: string;
+  let configTempDir: string;
   const repoRoot = path.join(__dirname, '../../..');
 
   beforeAll(async () => {
@@ -37,11 +47,21 @@ describe('12.3.1 进度条与对象级进度 (UT-TERM-001 / ST-V22-PROG-001)', (
   beforeEach(async () => {
     testDir = mkdtemp('code-analyze-progress');
     mock = await startMockOpenAIServer();
+    const { configPath: cp, tempDir: td } = await createTestConfig({
+      llmBaseUrl: mock.baseUrl,
+      llmApiKey: 'test',
+      llmModel: 'mock',
+      cacheEnabled: false,
+      cacheMaxSizeMb: 0,
+    });
+    configPath = cp;
+    configTempDir = td;
   });
 
   afterEach(async () => {
     if (mock) await mock.close();
     await fs.remove(testDir).catch(() => {});
+    if (configTempDir) await fs.remove(configTempDir).catch(() => {});
   });
 
   /**
@@ -64,7 +84,7 @@ describe('12.3.1 进度条与对象级进度 (UT-TERM-001 / ST-V22-PROG-001)', (
     let combined = '';
     try {
       const result = await execAsync(
-        `node dist/cli.js analyze --path "${testDir}" --mode full --force --no-skills --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
+        `node dist/cli.js analyze --path "${testDir}" --mode full --force --no-skills --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm -c "${configPath}"`,
         { cwd: repoRoot }
       );
       combined = (result.stdout ?? '') + (result.stderr ?? '');
@@ -104,7 +124,7 @@ describe('12.3.1 进度条与对象级进度 (UT-TERM-001 / ST-V22-PROG-001)', (
     let combined = '';
     try {
       const result = await execAsync(
-        `node dist/cli.js analyze --path "${testDir}" --mode full --force --no-skills --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm`,
+        `node dist/cli.js analyze --path "${testDir}" --mode full --force --no-skills --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0 --no-confirm -c "${configPath}"`,
         { cwd: repoRoot }
       );
       combined = (result.stdout ?? '') + (result.stderr ?? '');
