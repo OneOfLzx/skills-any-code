@@ -87,6 +87,7 @@ program
   .option('--llm-cache-dir <path>', 'LLM缓存存储目录')
   .option('--clear-cache', '清空现有LLM解析缓存后再执行解析')
   .action(async (options) => {
+    const os = require('os');
     try {
       // 加载配置（V2.5：配置未初始化时直接失败，提示先执行 init）
       let config;
@@ -122,8 +123,9 @@ program
       // 处理清空缓存选项
       if (options.clearCache) {
         const { FileHashCache } = await import('./infrastructure/cache/file.hash.cache');
+        const homeDir = os.homedir();
         const cache = new FileHashCache({
-          cacheDir: config.llm.cache_dir.replace('~', process.env.HOME || process.env.USERPROFILE || ''),
+          cacheDir: config.llm.cache_dir.replace(/^~(?=\/|\\|$)/, homeDir),
           maxSizeMb: config.llm.cache_max_size_mb,
         });
         await cache.clear();
@@ -193,7 +195,20 @@ program
       }
     } catch (error) {
       progressBar.stop();
-      logger.error('执行失败', error as Error);
+      const err = error as any;
+      // V2.5：LLM 连接/配置校验失败时统一输出明确前缀，满足 ST-LLM-CONNECT-001/002/003
+      if (err && err.code && (
+        err.code === ErrorCode.LLM_INVALID_CONFIG ||
+        err.code === ErrorCode.LLM_CALL_FAILED ||
+        err.code === ErrorCode.LLM_TIMEOUT
+      )) {
+        const detail = err.message || '';
+        process.stderr.write(`LLM 连接/配置校验失败: ${detail}\n`);
+      } else if (err instanceof AppError) {
+        logger.error(`执行失败：${err.message}`, err);
+      } else {
+        logger.error('执行失败', err as Error);
+      }
       process.exit(1);
     }
   });

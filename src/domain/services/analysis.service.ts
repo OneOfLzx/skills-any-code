@@ -21,6 +21,7 @@ import { LLMUsageTracker } from '../../infrastructure/llm/llm.usage.tracker'
 import { CodeSplitter } from '../../infrastructure/splitter/code.splitter'
 import { FileHashCache } from '../../infrastructure/cache/file.hash.cache'
 import { LLMAnalysisService } from '../../application/services/llm.analysis.service'
+import os from 'os'
 
 export class AnalysisService implements IAnalysisService {
   private llmAnalysisService: LLMAnalysisService
@@ -39,10 +40,12 @@ export class AnalysisService implements IAnalysisService {
     this.tracker = new LLMUsageTracker()
     const llmClient = new OpenAIClient(llmConfig, this.tracker);
     const fileSplitter = new CodeSplitter(llmClient);
+    const homeDir = os.homedir()
+    const resolvedCacheDir = llmConfig.cache_dir.replace(/^~(?=\/|\\|$)/, homeDir)
     const cache = new FileHashCache({
-      cacheDir: llmConfig.cache_dir.replace('~', process.env.HOME || process.env.USERPROFILE || ''),
+      cacheDir: resolvedCacheDir,
       maxSizeMb: llmConfig.cache_max_size_mb,
-    });
+    })
     this.llmAnalysisService = new LLMAnalysisService(llmClient, fileSplitter, cache, llmConfig);
   }
 

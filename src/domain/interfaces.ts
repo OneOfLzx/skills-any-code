@@ -8,6 +8,7 @@ import type {
   AnalysisMetadata,
   AnalysisCheckpoint,
   ModificationLog,
+  LLMConfig,
   LLMCallOptions,
   LLMResponse,
   FileChunk,
