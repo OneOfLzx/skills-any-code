@@ -7,6 +7,10 @@
     "skill-any-code": "dist/cli.js",
     "sac": "dist/cli.js"
   },
+  "files": [
+    "dist/**",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
