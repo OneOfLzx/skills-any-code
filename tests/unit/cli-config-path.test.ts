@@ -6,7 +6,7 @@ import { configManager } from '../../src/common/config';
 describe('CLI默认配置路径测试 (UT-CLI-CFG-*)', () => {
   const originalHome = process.env.HOME;
   const originalUserProfile = process.env.USERPROFILE;
-  const tempHome = path.join(os.tmpdir(), 'code-analyze-test-cli-config');
+  const tempHome = path.join(os.tmpdir(), 'skill-any-code-test-cli-config');
   const originalCwd = process.cwd();
 
   beforeEach(async () => {
@@ -34,11 +34,11 @@ describe('CLI默认配置路径测试 (UT-CLI-CFG-*)', () => {
     await configManager.init();
     await configManager.load();
 
-    const expectedConfigPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const expectedConfigPath = path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
     const configExists = await fs.pathExists(expectedConfigPath);
     expect(configExists).toBe(true);
 
-    const oldConfigPath = path.join(tempHome, '.code-analyze', 'config.yaml');
+    const oldConfigPath = path.join(tempHome, '.old-config-location', 'config.yaml');
     const oldConfigExists = await fs.pathExists(oldConfigPath);
     expect(oldConfigExists).toBe(false);
   });

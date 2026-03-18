@@ -33,7 +33,7 @@ export class OpenAIClient implements ILLMClient {
     if (!this.config.base_url || !this.config.api_key || !this.config.model) {
       throw new AppError(
         ErrorCode.LLM_INVALID_CONFIG,
-        'LLM 配置不完整，请在配置文件或环境变量中设置 base_url/api_key/model',
+        'Incomplete LLM config. Please set base_url/api_key/model via config file, env vars, or CLI options.',
         {
           missing: {
             base_url: !this.config.base_url,
@@ -54,15 +54,15 @@ export class OpenAIClient implements ILLMClient {
 
       const status = (res as any).status ?? 200;
       if (status === 401) {
-        throw new AppError(ErrorCode.LLM_CALL_FAILED, 'LLM 鉴权失败', { status });
+        throw new AppError(ErrorCode.LLM_CALL_FAILED, 'LLM authentication failed (401)', { status });
       }
       if (status === 404) {
-        throw new AppError(ErrorCode.LLM_CALL_FAILED, 'LLM 模型不存在', { status });
+        throw new AppError(ErrorCode.LLM_CALL_FAILED, 'LLM model not found (404)', { status });
       }
       if (status < 200 || status >= 300) {
         throw new AppError(
           ErrorCode.LLM_CALL_FAILED,
-          `LLM 连接校验返回异常状态码：${status}`,
+          `LLM connectivity check returned non-2xx status: ${status}`,
           { status },
         );
       }
@@ -72,14 +72,14 @@ export class OpenAIClient implements ILLMClient {
       }
       const code = e?.code || e?.status;
       if (code === 'ETIMEDOUT') {
-        throw new AppError(ErrorCode.LLM_TIMEOUT, 'LLM 连接超时', e);
+        throw new AppError(ErrorCode.LLM_TIMEOUT, 'LLM connectivity check timed out', e);
       }
       if (code === 'ENOTFOUND' || code === 'ECONNREFUSED' || code === 'ECONNRESET') {
-        throw new AppError(ErrorCode.LLM_CALL_FAILED, '无法连接到 LLM 服务，请检查网络或 base_url', e);
+        throw new AppError(ErrorCode.LLM_CALL_FAILED, 'Unable to reach LLM service. Check network or base_url.', e);
       }
       throw new AppError(
         ErrorCode.LLM_CALL_FAILED,
-        `LLM 连接校验失败：${e?.message || String(e)}`,
+        `LLM connectivity check failed: ${e?.message || String(e)}`,
         e,
       );
     }
@@ -104,7 +104,6 @@ export class OpenAIClient implements ILLMClient {
           temperature: options?.temperature ?? this.config.temperature,
           max_tokens: options?.maxTokens ?? this.config.max_tokens,
           messages: [
-            { role: 'system', content: '你是专业的代码分析专家，严格按照要求输出结构化结果。' },
             { role: 'user', content: prompt }
           ]
         });

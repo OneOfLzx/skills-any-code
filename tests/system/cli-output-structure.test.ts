@@ -55,7 +55,7 @@ function extractCurrentObjects(output: string): CurrentObjectsSnapshot {
 
   for (const raw of lines) {
     const line = raw.trim();
-    if (/^当前对象[:：]?$/.test(line)) {
+    if (/^Current[:：]?$/.test(line)) {
       if (current && current.length > 0) {
         groups.push(current);
       }
@@ -69,7 +69,7 @@ function extractCurrentObjects(output: string): CurrentObjectsSnapshot {
       current = null;
       continue;
     }
-    if (/^(已处理:|Tokens:|解析进度|INFO|WARN|ERROR|\[INFO\]|\[WARN\]|\[ERROR\])/.test(line)) {
+    if (/^(Processed:|Tokens:|Progress|INFO|WARN|ERROR|\[INFO\]|\[WARN\]|\[ERROR\])/.test(line)) {
       if (current.length > 0) groups.push(current);
       current = null;
       continue;
@@ -121,20 +121,20 @@ type ProgressSample = {
   lineIndex: number;
 };
 
-// 解析带有「解析进度」「已处理: x/y 对象」模板的行
+// Parse lines containing Progress + Processed: x/y
 function extractParseProgressSamples(output: string): ProgressSample[] {
   const lines = stripAnsi(output).split(/\r?\n/);
   const samples: ProgressSample[] = [];
 
-  const reInline = /解析进度.*已处理:\s*(\d+)\/(\d+)\s*(?:文件|对象)/;
-  const reDoneLine = /^已处理:\s*(\d+)\/(\d+)\s*(?:文件|对象)/;
+  const reInline = /Progress.*Processed:\s*(\d+)\/(\d+)/;
+  const reDoneLine = /^Processed:\s*(\d+)\/(\d+)/;
 
   for (let idx = 0; idx < lines.length; idx++) {
     const line = lines[idx];
     // 兼容两种格式：
     // 1) 单行：解析进度 ... 已处理: x/y 对象
     // 2) 双行：解析进度 ...（下一行）已处理: x/y 对象
-    if (!line.includes('解析进度')) continue;
+    if (!line.includes('Progress')) continue;
 
     const inline = line.match(reInline);
     if (inline) {
@@ -183,7 +183,7 @@ function findFinalBlockTriple(output: string) {
     let currentHeaderIndex = -1;
     for (let i = tokenIndex - 1; i >= 0; i--) {
       const line = plainLines[i].trim();
-      if (/^当前对象[:：]?$/.test(line)) {
+      if (/^Current[:：]?$/.test(line)) {
         currentHeaderIndex = i;
         break;
       }
@@ -198,7 +198,7 @@ function findFinalBlockTriple(output: string) {
         if (
           l &&
           (l.includes('/') || l.includes('\\')) &&
-          !/^已处理:/.test(l) &&
+          !/^Processed:/.test(l) &&
           !/^Tokens:/.test(l)
         ) {
           pathLines.push({ index: i, value: l });
@@ -211,7 +211,7 @@ function findFinalBlockTriple(output: string) {
     const searchFrom = (currentHeaderIndex !== -1 ? currentHeaderIndex : tokenIndex) - 1;
     for (let i = searchFrom; i >= 0; i--) {
       const l = plainLines[i];
-      if (l.includes('解析进度')) {
+      if (l.includes('Progress')) {
         progressIndex = i;
         break;
       }

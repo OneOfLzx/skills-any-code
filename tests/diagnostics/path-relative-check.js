@@ -1,14 +1,14 @@
 /**
  * 诊断脚本：验证 Windows 下 path.relative 与 ignore 库的行为
- * 用于复现用户报告的 .code-analyze-result 黑名单失效问题
+ * 用于复现用户报告的 .skill-any-code-result 黑名单失效问题
  */
 const path = require('path');
 const ignore = require('ignore');
 
 // 模拟用户项目路径（含中文、数字、点）
 const projectRoot = 'C:\\Software\\paper\\12.08材料\\计算细分类型的结果';
-const fullPathDir = path.join(projectRoot, '.code-analyze-result');
-const fullPathFile = path.join(projectRoot, '.code-analyze-result', 'index.md');
+const fullPathDir = path.join(projectRoot, '.skill-any-code-result');
+const fullPathFile = path.join(projectRoot, '.skill-any-code-result', 'index.md');
 
 const relativeDir = path.relative(projectRoot, fullPathDir);
 const relativeFile = path.relative(projectRoot, fullPathFile);
@@ -48,16 +48,16 @@ function safeIgnores(ig, p) {
     return `THROW: ${e.message}`;
   }
 }
-const ig = ignore().add('.code-analyze-result/');
+const ig = ignore().add('.skill-any-code-result/');
 const testCases = [
-  ['.code-analyze-result/', '期望匹配的目录'],
-  ['.code-analyze-result/index.md', '期望匹配的文件'],
+  ['.skill-any-code-result/', '期望匹配的目录'],
+  ['.skill-any-code-result/index.md', '期望匹配的文件'],
   [relativeFile.replace(/\\/g, '/'), '实际 relativeFile 归一化后'],
   [keyDirActual.replace(/\\/g, '/'), '实际目录 key 归一化后'],
   // 模拟 path.relative 可能返回的异常格式
-  ['./.code-analyze-result/', '若返回 .\\ 前缀的目录'],
-  ['./.code-analyze-result/index.md', '若返回 .\\ 前缀的文件'],
-  ['\\.code-analyze-result\\index.md'.replace(/\\/g, '/'), '若返回 \\ 前缀(会抛错)'],
+  ['./.skill-any-code-result/', '若返回 .\\ 前缀的目录'],
+  ['./.skill-any-code-result/index.md', '若返回 .\\ 前缀的文件'],
+  ['\\.skill-any-code-result\\index.md'.replace(/\\/g, '/'), '若返回 \\ 前缀(会抛错)'],
 ];
 console.log('\n=== ignore 库匹配结果 ===');
 for (const [p, desc] of testCases) {

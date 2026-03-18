@@ -38,19 +38,19 @@ export class GitService implements IGitService {
         return await this.getGit().revparse(['HEAD'])
       } catch (e) {
         if (i === maxRetries - 1) {
-          throw new AppError(ErrorCode.GIT_OPERATION_FAILED, '获取当前commit失败', e)
+          throw new AppError(ErrorCode.GIT_OPERATION_FAILED, 'Failed to get current commit', e)
         }
         await new Promise(resolve => setTimeout(resolve, 100 * (i + 1)));
       }
     }
-    throw new AppError(ErrorCode.GIT_OPERATION_FAILED, '获取当前commit失败')
+    throw new AppError(ErrorCode.GIT_OPERATION_FAILED, 'Failed to get current commit')
   }
 
   async getCurrentBranch(): Promise<string> {
     try {
       return await this.getGit().revparse(['--abbrev-ref', 'HEAD'])
     } catch (e) {
-      throw new AppError(ErrorCode.GIT_OPERATION_FAILED, '获取当前分支失败', e)
+      throw new AppError(ErrorCode.GIT_OPERATION_FAILED, 'Failed to get current branch', e)
     }
   }
 
@@ -83,7 +83,7 @@ export class GitService implements IGitService {
       const status = await this.getGit().status()
       return status.files.map(f => f.path)
     } catch (e) {
-      throw new AppError(ErrorCode.GIT_OPERATION_FAILED, '获取未提交变更失败', e)
+      throw new AppError(ErrorCode.GIT_OPERATION_FAILED, 'Failed to get uncommitted changes', e)
     }
   }
 
@@ -92,7 +92,7 @@ export class GitService implements IGitService {
       const diff = await this.getGit().diff([`${commit1}..${commit2}`, '--name-only'])
       return diff.split('\n').filter(Boolean)
     } catch (e) {
-      throw new AppError(ErrorCode.GIT_OPERATION_FAILED, '比较commit差异失败', e)
+      throw new AppError(ErrorCode.GIT_OPERATION_FAILED, 'Failed to diff commits', e)
     }
   }
 

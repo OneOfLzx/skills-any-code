@@ -50,7 +50,7 @@ describe('System: 结果目录不应出现多余 JSON（仅 md）', () => {
   });
 
   test(
-    'ST-RESULT-NO-PERFILE-JSON-001: full analyze 后结果目录不应出现 per-file/per-dir 的 json（允许集中 metadata/index）',
+    'ST-RESULT-NO-PERFILE-JSON-001: full analyze 后结果目录不应出现任何 json（仅 md）',
     async () => {
       const mock = await startMockOpenAIServer();
       const testProject = await TestProjectFactory.create('small', false);
@@ -107,9 +107,7 @@ describe('System: 结果目录不应出现多余 JSON（仅 md）', () => {
         const files = await listAllFilesRecursively(resultRoot);
         const jsons = findJsonFiles(files);
 
-        const allowed = new Set(['.analysis_metadata.json', 'analysis-index.json']);
-        const violations = jsons.filter((rel) => !allowed.has(rel));
-        expect(violations).toEqual([]);
+        expect(jsons).toEqual([]);
 
         // 正向断言：至少产出 1 个 md，避免“没写结果也通过”
         expect(files.some((p) => p.toLowerCase().endsWith('.md'))).toBe(true);

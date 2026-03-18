@@ -63,7 +63,7 @@ export async function aggregateDirectory(
   if (!llmConfig || !llmConfig.base_url || !llmConfig.model) {
     const fileCount = childrenFilesPayload.length
     const dirCount = childrenDirsPayload.length
-    const fallback = `该目录「${name}」包含 ${fileCount} 个文件和 ${dirCount} 个子目录，用于组织与当前模块相关的源代码与子模块。`
+    const fallback = `The "${name}" directory contains ${fileCount} file(s) and ${dirCount} subdirectory(ies) and helps organize related source code and modules.`
     return { description: fallback, summary: fallback, usage: { totalPromptTokens: 0, totalCompletionTokens: 0, totalTokens: 0, totalCalls: 0 } }
   }
 
@@ -87,7 +87,7 @@ export async function aggregateDirectory(
   } catch {
     const fileCount = childrenFilesPayload.length
     const dirCount = childrenDirsPayload.length
-    const fallback = `该目录「${name}」包含 ${fileCount} 个文件和 ${dirCount} 个子目录，用于组织与当前模块相关的源代码与子模块。`
+    const fallback = `The "${name}" directory contains ${fileCount} file(s) and ${dirCount} subdirectory(ies) and helps organize related source code and modules.`
     return { description: fallback, summary: fallback, usage: tracker.getStats() }
   }
 }

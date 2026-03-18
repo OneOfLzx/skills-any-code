@@ -28,8 +28,8 @@ describe('黑名单过滤 (V23-BL)', () => {
     expect(service.isIgnored('src/index.ts')).toBe(false);
   });
 
-  it('UT-V23-BL-002: 项目级 .code-analyze-ignore 过滤生效', async () => {
-    await fs.writeFile(path.join(testProjectDir, '.code-analyze-ignore'), 'jest.config.*\n', 'utf-8');
+  it('UT-V23-BL-002: 项目级 .skill-any-code-ignore 过滤生效', async () => {
+    await fs.writeFile(path.join(testProjectDir, '.skill-any-code-ignore'), 'jest.config.*\n', 'utf-8');
     const service = new BlacklistService();
     await service.load([], testProjectDir);
 
@@ -48,7 +48,7 @@ describe('黑名单过滤 (V23-BL)', () => {
   });
 
   it('UT-V23-BL-004: 项目级否定模式覆盖全局规则', async () => {
-    await fs.writeFile(path.join(testProjectDir, '.code-analyze-ignore'), '!tsconfig.json\n', 'utf-8');
+    await fs.writeFile(path.join(testProjectDir, '.skill-any-code-ignore'), '!tsconfig.json\n', 'utf-8');
     const service = new BlacklistService();
     await service.load(['*.json'], testProjectDir);
 
@@ -57,7 +57,7 @@ describe('黑名单过滤 (V23-BL)', () => {
     expect(service.isIgnored('src/data.json')).toBe(true);
   });
 
-  it('UT-V23-BL-007: .code-analyze-ignore 不存在时正常运行', async () => {
+  it('UT-V23-BL-007: .skill-any-code-ignore 不存在时正常运行', async () => {
     const service = new BlacklistService();
     await service.load(['*.log'], testProjectDir);
     expect(service.isIgnored('app.log')).toBe(true);
@@ -78,7 +78,7 @@ describe('黑名单过滤 (V23-BL)', () => {
 
   it('UT-V23-BL-015: 注释行和空行被忽略', async () => {
     await fs.writeFile(
-      path.join(testProjectDir, '.code-analyze-ignore'),
+      path.join(testProjectDir, '.skill-any-code-ignore'),
       '# this is a comment\n\n*.tmp\n',
       'utf-8'
     );
@@ -90,9 +90,9 @@ describe('黑名单过滤 (V23-BL)', () => {
 
   it('UT-V23-BL-WINPATH-001: Windows 分隔符路径仍能被黑名单过滤', async () => {
     const service = new BlacklistService();
-    await service.load(['.code-analyze-result/'], testProjectDir);
+    await service.load(['.skill-any-code-result/'], testProjectDir);
 
-    expect(service.isIgnored('.code-analyze-result\\index.md')).toBe(true);
+    expect(service.isIgnored('.skill-any-code-result\\index.md')).toBe(true);
     expect(service.isIgnored('src\\index.ts')).toBe(false);
   });
 
@@ -102,36 +102,36 @@ describe('黑名单过滤 (V23-BL)', () => {
    */
   it('UT-V23-BL-PREFIX-001: ./ 或 / 前缀路径归一化后仍被黑名单过滤', async () => {
     const service = new BlacklistService();
-    await service.load(['.code-analyze-result/'], testProjectDir);
+    await service.load(['.skill-any-code-result/'], testProjectDir);
 
-    expect(service.isIgnored('./.code-analyze-result/')).toBe(true);
-    expect(service.isIgnored('./.code-analyze-result/index.md')).toBe(true);
-    expect(service.isIgnored('/.code-analyze-result/index.md')).toBe(true);
-    expect(service.isIgnored('.\\.code-analyze-result\\index.md')).toBe(true);
+    expect(service.isIgnored('./.skill-any-code-result/')).toBe(true);
+    expect(service.isIgnored('./.skill-any-code-result/index.md')).toBe(true);
+    expect(service.isIgnored('/.skill-any-code-result/index.md')).toBe(true);
+    expect(service.isIgnored('.\\.skill-any-code-result\\index.md')).toBe(true);
     expect(service.isIgnored('./src/index.ts')).toBe(false);
   });
 
   /**
    * 测试文档 14 根因分析延伸：.gitignore 否定规则会覆盖全局黑名单。
-   * 若用户项目 .gitignore 含 !*.md 等，可能使 .code-analyze-result 内文件被解析。
+   * 若用户项目 .gitignore 含 !*.md 等，可能使 .skill-any-code-result 内文件被解析。
    */
-  it('UT-V23-BL-NEGATE-001: .gitignore 否定规则不应覆盖 .code-analyze-result 黑名单', async () => {
+  it('UT-V23-BL-NEGATE-001: .gitignore 否定规则不应覆盖 .skill-any-code-result 黑名单', async () => {
     await fs.writeFile(
       path.join(testProjectDir, '.gitignore'),
-      '.code-analyze-result/\n!*.md\n',
+      '.skill-any-code-result/\n!*.md\n',
       'utf-8'
     );
     const service = new BlacklistService();
-    await service.load(['.code-analyze-result/'], testProjectDir);
+    await service.load(['.skill-any-code-result/'], testProjectDir);
 
-    // .code-analyze-result 由全局黑名单与 .gitignore 共同忽略，否定规则 !*.md 不应解禁其下的 .md
-    expect(service.isIgnored('.code-analyze-result/index.md')).toBe(true);
-    expect(service.isIgnored('.code-analyze-result/sub/readme.md')).toBe(true);
+    // .skill-any-code-result 由全局黑名单与 .gitignore 共同忽略，否定规则 !*.md 不应解禁其下的 .md
+    expect(service.isIgnored('.skill-any-code-result/index.md')).toBe(true);
+    expect(service.isIgnored('.skill-any-code-result/sub/readme.md')).toBe(true);
   });
 
-  it('UT-BLACKLIST-IMG-002: .code-analyze-ignore 中的 ! 规则可解封部分图片', async () => {
+  it('UT-BLACKLIST-IMG-002: .skill-any-code-ignore 中的 ! 规则可解封部分图片', async () => {
     await fs.writeFile(
-      path.join(testProjectDir, '.code-analyze-ignore'),
+      path.join(testProjectDir, '.skill-any-code-ignore'),
       '!assets/logo.png\n',
       'utf-8'
     );

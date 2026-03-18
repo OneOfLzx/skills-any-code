@@ -5,7 +5,7 @@ import yaml from 'js-yaml';
 import { configManager } from '../../../src/common/config';
 
 describe('LLM 配置测试', () => {
-  const configPath = path.join(os.homedir(), '.config/code-analyze/config.yaml');
+  const configPath = path.join(os.homedir(), '.config/skill-any-code/config.yaml');
   const originalEnv = { ...process.env };
 
   beforeEach(async () => {
@@ -43,8 +43,8 @@ describe('LLM 配置测试', () => {
     );
 
     // 2. 设置环境变量
-    process.env.CODE_ANALYZE_LLM_MODEL = 'gpt-4';
-    process.env.CODE_ANALYZE_LLM_API_KEY = 'env-key';
+    process.env.SKILL_ANY_CODE_LLM_MODEL = 'gpt-4';
+    process.env.SKILL_ANY_CODE_LLM_API_KEY = 'env-key';
 
     // 3. 加载配置并模拟CLI参数覆盖（当前项目的覆盖逻辑在 CLI 层）
     const loaded = await configManager.load();

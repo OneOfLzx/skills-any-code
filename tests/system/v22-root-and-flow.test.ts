@@ -25,9 +25,9 @@ describe('V2.2 根目录与整体行为 (ST-V22-ROOT)', () => {
   });
 
   beforeEach(async () => {
-    testDir = mkdtemp('code-analyze-v22-root');
+    testDir = mkdtemp('skill-any-code-v22-root');
     mock = await startMockOpenAIServer();
-    tempHome = path.join(os.tmpdir(), `ca-v22-home-${Date.now()}`);
+    tempHome = path.join(os.tmpdir(), `sac-v22-home-${Date.now()}`);
     await fs.ensureDir(tempHome);
     await createTestConfigInDir(tempHome, { llmBaseUrl: mock.baseUrl, llmApiKey: 'test', llmModel: 'mock' });
     await createTestProject(testDir, {
@@ -48,7 +48,7 @@ describe('V2.2 根目录与整体行为 (ST-V22-ROOT)', () => {
       { cwd: repoRoot, env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome } }
     );
 
-    const resultDir = path.join(testDir, '.code-analyze-result');
+    const resultDir = path.join(testDir, '.skill-any-code-result');
     const projectSummaryPath = path.join(resultDir, 'PROJECT_SUMMARY.md');
     const rootIndexPath = path.join(resultDir, 'index.md');
 
@@ -62,24 +62,10 @@ describe('V2.2 根目录与整体行为 (ST-V22-ROOT)', () => {
       { cwd: repoRoot, env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome } }
     );
 
-    const resultDir = path.join(testDir, '.code-analyze-result');
+    const resultDir = path.join(testDir, '.skill-any-code-result');
     const modLogPath = path.join(resultDir, 'ANALYSIS_MODIFICATION_LOG.md');
     expect(await fs.pathExists(modLogPath)).toBe(false);
   }, 60000);
 
-  it('UT-V23-INDEX-001: 全量解析后应生成 analysis-index.json', async () => {
-    await execAsync(
-      `node dist/cli.js --path "${testDir}" --mode full --no-skills --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0`,
-      { cwd: repoRoot, env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome } }
-    );
-
-    const indexPath = path.join(testDir, '.code-analyze-result', 'analysis-index.json');
-    expect(await fs.pathExists(indexPath)).toBe(true);
-    const indexData = await fs.readJson(indexPath);
-    expect(indexData).toHaveProperty('version');
-    expect(indexData).toHaveProperty('projectRoot');
-    expect(indexData).toHaveProperty('storageRoot');
-    expect(indexData).toHaveProperty('generatedAt');
-    expect(indexData).toHaveProperty('entries');
-  }, 60000);
+  it.skip('UT-V23-INDEX-001: 旧版索引生成（V2.6 起不再生成 analysis-index.json）', async () => {}, 60000);
 });

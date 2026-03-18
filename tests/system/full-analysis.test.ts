@@ -12,7 +12,7 @@ describe('System test: V2.1 LLM原生解析（ST-FULL-* / ST-INC-* 关键场景�
   const originalUserProfile = process.env.USERPROFILE;
 
   beforeAll(async () => {
-    tempHome = path.join(os.tmpdir(), `ca-full-analysis-${Date.now()}`);
+    tempHome = path.join(os.tmpdir(), `sac-full-analysis-${Date.now()}`);
     await fs.ensureDir(tempHome);
     const mock = await startMockOpenAIServer();
     await createTestConfigInDir(tempHome, {
@@ -73,7 +73,7 @@ describe('System test: V2.1 LLM原生解析（ST-FULL-* / ST-INC-* 关键场景�
     }
   }, 120000);
 
-  test('ST-V23-BL-OUTDIR-001: 输出目录 .code-analyze-result 不参与解析', async () => {
+  test('ST-V23-BL-OUTDIR-001: 输出目录 .skill-any-code-result 不参与解析', async () => {
     const mock = await startMockOpenAIServer();
     const testProject = await TestProjectFactory.create('small', false);
     const projectPath = testProject.path;
@@ -125,17 +125,25 @@ describe('System test: V2.1 LLM原生解析（ST-FULL-* / ST-INC-* 关键场景�
 
       expect(second.success).toBe(true);
       expect(second.data?.analyzedFilesCount).toBe(first.data?.analyzedFilesCount);
-
-      const indexPath = path.join(projectPath, '.code-analyze-result', 'analysis-index.json');
-      const indexData = await fs.readJson(indexPath);
-
-      const entries = indexData.entries ?? {};
-      const keys = Object.keys(entries);
-
-      expect(keys.length).toBeGreaterThan(0);
-      for (const k of keys) {
-        expect(k.includes('/.code-analyze-result/')).toBe(false);
-        expect(k.endsWith('/.code-analyze-result')).toBe(false);
+      // V2.6：不再生成 analysis-index.json。这里改为断言：结果目录内不会出现嵌套的结果目录路径。
+      const outRoot = path.join(projectPath, '.skill-any-code-result');
+      const stack: string[] = [outRoot];
+      const rels: string[] = [];
+      while (stack.length > 0) {
+        const current = stack.pop() as string;
+        const entries = await fs.readdir(current, { withFileTypes: true });
+        for (const e of entries) {
+          const full = path.join(current, e.name);
+          const rel = path.relative(outRoot, full).replace(/\\/g, '/');
+          if (e.isDirectory()) {
+            stack.push(full);
+          } else if (e.isFile()) {
+            rels.push(rel);
+          }
+        }
+      }
+      for (const r of rels) {
+        expect(r.includes('.skill-any-code-result/')).toBe(false);
       }
     } finally {
       await mock.close();
@@ -181,7 +189,7 @@ describe('System test: V2.1 LLM原生解析（ST-FULL-* / ST-INC-* 关键场景�
 
       expect(res.success).toBe(true);
 
-      const outRoot = path.join(projectPath, '.code-analyze-result');
+      const outRoot = path.join(projectPath, '.skill-any-code-result');
       const emptyDirMd = path.join(outRoot, 'src', 'emptydir', 'index.md');
       const onlyMdDirMd = path.join(outRoot, 'src', 'only-md', 'index.md');
 

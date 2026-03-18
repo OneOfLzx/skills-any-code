@@ -114,9 +114,9 @@ describe('CLI e2e: 大项目解析不应 OOM/crash（问题6）', () => {
         expect(code).toBe(0)
         expect(combined.toLowerCase()).not.toContain('heap out of memory')
 
-        // CLI 结束信号（当前实现会输出“解析完成！共分析 X 个文件...”）
-        expect(combined).toContain('解析完成')
-        expect(combined).toContain('共分析')
+        // CLI completion signal
+        expect(combined).toContain('Analysis completed')
+        expect(combined).toContain('Processed')
       } finally {
         await mock.close()
         await fs.remove(tempHome).catch(() => {})

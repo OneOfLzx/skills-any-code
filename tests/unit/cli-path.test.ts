@@ -11,7 +11,7 @@ const execAsync = promisify(exec);
 describe('CLI路径测试 (UT-CLI-PATH-*)', () => {
   const originalHome = process.env.HOME;
   const originalUserProfile = process.env.USERPROFILE;
-  const tempHome = path.join(os.tmpdir(), 'code-analyze-test-cli');
+  const tempHome = path.join(os.tmpdir(), 'skill-any-code-test-cli');
   let testProjectPath: string;
   let mock: { baseUrl: string; close: () => Promise<void> };
 
@@ -23,7 +23,7 @@ describe('CLI路径测试 (UT-CLI-PATH-*)', () => {
 
     await fs.remove(tempHome);
     await fs.ensureDir(tempHome);
-    testProjectPath = await fs.mkdtemp(path.join(os.tmpdir(), 'code-analyze-test-project-'));
+    testProjectPath = await fs.mkdtemp(path.join(os.tmpdir(), 'skill-any-code-test-project-'));
     mock = await startMockOpenAIServer();
 
     // 创建测试项目文件
@@ -39,12 +39,12 @@ describe('CLI路径测试 (UT-CLI-PATH-*)', () => {
     await fs.remove(testProjectPath);
   });
 
-  test('UT-CLI-PATH-001: CLI默认配置路径正确，init 生成在~/.config/code-analyze/config.yaml', async () => {
+  test('UT-CLI-PATH-001: CLI默认配置路径正确，init 生成在~/.config/skill-any-code/config.yaml', async () => {
     // 先编译CLI
     await execAsync('npm run build', { cwd: path.join(__dirname, '../../') });
 
     // V2.5：配置不再自动创建，需先执行 init
-    const newConfigPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const newConfigPath = path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
     await execAsync('node dist/cli.js init', {
       cwd: path.join(__dirname, '../../'),
       env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome }
@@ -55,17 +55,17 @@ describe('CLI路径测试 (UT-CLI-PATH-*)', () => {
     expect(newConfigExists).toBe(true);
 
     // 检查旧路径配置文件不存在
-    const oldConfigPath = path.join(tempHome, '.code-analyze', 'config.yaml');
+    const oldConfigPath = path.join(tempHome, '.old-config-location', 'config.yaml');
     const oldConfigExists = await fs.pathExists(oldConfigPath);
     expect(oldConfigExists).toBe(false);
   });
 
-  test('UT-CLI-PATH-002: 默认结果路径正确，没有两级.code-analyze-result目录', async () => {
+  test('UT-CLI-PATH-002: 默认结果路径正确，没有两级.skill-any-code-result目录', async () => {
     // 先编译CLI
     await execAsync('npm run build', { cwd: path.join(__dirname, '../../') });
 
     // V2.5：需先 init 创建配置，再执行 analyze
-    const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const configPath = path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
     await createTestConfigWithLlm(configPath, { base_url: mock.baseUrl, api_key: 'test', model: 'mock' });
 
     // 执行分析命令
@@ -75,7 +75,7 @@ describe('CLI路径测试 (UT-CLI-PATH-*)', () => {
     });
 
     // 检查结果目录存在
-    const resultDir = path.join(testProjectPath, '.code-analyze-result');
+    const resultDir = path.join(testProjectPath, '.skill-any-code-result');
     const resultDirExists = await fs.pathExists(resultDir);
     expect(resultDirExists).toBe(true);
 
@@ -85,9 +85,10 @@ describe('CLI路径测试 (UT-CLI-PATH-*)', () => {
     const summaryExists = await fs.pathExists(summaryFile);
     expect(summaryExists).toBe(true);
 
+    // V2.6：不再生成 .analysis_metadata.json
     const metadataFile = path.join(resultDir, '.analysis_metadata.json');
     const metadataExists = await fs.pathExists(metadataFile);
-    expect(metadataExists).toBe(true);
+    expect(metadataExists).toBe(false);
   });
 
   test('UT-CLI-PATH-003: 自定义output_dir参数生效', async () => {
@@ -96,7 +97,7 @@ describe('CLI路径测试 (UT-CLI-PATH-*)', () => {
     const customOutputDir = path.join(testProjectPath, 'my-custom-result');
 
     // V2.5：需先 init 创建配置
-    const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const configPath = path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
     await createTestConfigWithLlm(configPath, { base_url: mock.baseUrl, api_key: 'test', model: 'mock' });
 
     // 执行分析命令，指定自定义输出目录
@@ -110,7 +111,7 @@ describe('CLI路径测试 (UT-CLI-PATH-*)', () => {
     expect(customDirExists).toBe(true);
 
     // 检查默认目录不存在
-    const defaultDirExists = await fs.pathExists(path.join(testProjectPath, '.code-analyze-result'));
+    const defaultDirExists = await fs.pathExists(path.join(testProjectPath, '.skill-any-code-result'));
     expect(defaultDirExists).toBe(false);
 
     // 检查结果文件存在于自定义目录（V2.2 起为 index.md）

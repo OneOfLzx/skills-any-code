@@ -91,7 +91,7 @@ describe('13.2 文件级 Markdown 结构 (UT-FILE-MD-STRUCT)', () => {
 
     await storage.saveFileAnalysis('test-slug', filePath, data);
 
-    const storageRoot = path.join(testDir, '.code-analyze-result');
+    const storageRoot = path.join(testDir, '.skill-any-code-result');
     const outputPath = path.join(storageRoot, 'src', 'foo.md');
     expect(await fs.pathExists(outputPath)).toBe(true);
 
@@ -141,7 +141,7 @@ describe('13.2 文件级 Markdown 结构 (UT-FILE-MD-STRUCT)', () => {
 
     await storage.saveFileAnalysis('test-slug', filePath, data);
 
-    const storageRoot = path.join(testDir, '.code-analyze-result');
+    const storageRoot = path.join(testDir, '.skill-any-code-result');
     const outputPath = path.join(storageRoot, 'src', 'bar.md');
     const content = await fs.readFile(outputPath, 'utf-8');
 

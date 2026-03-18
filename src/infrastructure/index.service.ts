@@ -1,10 +1,11 @@
 import * as fs from 'fs-extra'
 import * as path from 'path'
-import { IIndexService } from '../domain/interfaces'
 import { AnalysisIndex, IndexEntry } from '../common/types'
 import { normalizePath } from '../common/utils'
 
-export class IndexService implements IIndexService {
+// V2.6 起不再在主流程生成/依赖 analysis-index.json。
+// 为兼容历史代码/测试，此类暂保留，但不再实现 IIndexService 接口。
+export class IndexService {
   private getIndexFilePath(storageRoot: string): string {
     return path.join(storageRoot, 'analysis-index.json')
   }

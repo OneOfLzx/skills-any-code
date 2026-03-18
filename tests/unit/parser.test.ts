@@ -55,7 +55,7 @@ describe('LLM 原生解析覆盖（替代旧 ParserRegistry）', () => {
   const originalUserProfile = process.env.USERPROFILE;
 
   beforeAll(async () => {
-    tempHome = path.join(require('os').tmpdir(), `ca-parser-${Date.now()}`);
+    tempHome = path.join(require('os').tmpdir(), `sac-parser-${Date.now()}`);
     await fs.ensureDir(tempHome);
     const mock = await startMockOpenAIServer();
     await createTestConfigInDir(tempHome, {
@@ -78,7 +78,7 @@ describe('LLM 原生解析覆盖（替代旧 ParserRegistry）', () => {
 
   test('UT-PARSE-006/009(覆盖): 任意后缀/无后缀文本文件都会进入LLM解析流程', async () => {
     const mock = await startMockOpenAIServer();
-    const tempDir = await fs.mkdtemp(path.join(require('os').tmpdir(), 'code-analyze-parse-'));
+    const tempDir = await fs.mkdtemp(path.join(require('os').tmpdir(), 'skill-any-code-parse-'));
     try {
       await fs.writeFile(path.join(tempDir, 'Dockerfile'), 'FROM node:18-alpine\nWORKDIR /app');
       await fs.writeFile(path.join(tempDir, 'add.py'), 'def add(a,b): return a+b');

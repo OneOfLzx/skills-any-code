@@ -66,7 +66,7 @@ export class FileHashCache implements IAnalysisCache {
         await fs.remove(f.filePath);
         total -= f.size;
       } catch (e) {
-        logger.warn(`删除缓存文件失败: ${f.filePath}`, e);
+        logger.warn(`Failed to delete cache file: ${f.filePath}`, e);
       }
     }
   }

@@ -11,13 +11,15 @@ import { mkdtemp } from '../../utils/create-test-project';
 
 const indexService = new IndexService();
 
-describe('CLI resolve 子命令逻辑 (V23-RESOLVE)', () => {
+// V2.6 起 CLI resolve 不再依赖 IndexService/analysis-index.json，保留历史用例但默认跳过
+// eslint-disable-next-line jest/no-disabled-tests
+describe.skip('CLI resolve 子命令逻辑 (V23-RESOLVE)', () => {
   let testProjectDir: string;
   let storageRoot: string;
 
   beforeEach(async () => {
-    testProjectDir = mkdtemp('code-analyze-resolve');
-    storageRoot = getStoragePath(testProjectDir, './.code-analyze-result');
+    testProjectDir = mkdtemp('skill-any-code-resolve');
+    storageRoot = getStoragePath(testProjectDir, './.skill-any-code-result');
     await fs.ensureDir(storageRoot);
   });
 

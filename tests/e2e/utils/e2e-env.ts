@@ -3,7 +3,7 @@ import * as path from 'path';
 
 export type E2ELLMMood = 'mock' | 'real';
 
-const E2E_LLM_MODE_ENV = 'CODE_ANALYZE_E2E_LLM_MODE';
+const E2E_LLM_MODE_ENV = 'SKILL_ANY_CODE_E2E_LLM_MODE';
 
 export function getE2ELLMMood(): { mode: E2ELLMMood; useMockLLM: boolean } {
   const raw = (process.env[E2E_LLM_MODE_ENV] || 'mock').toLowerCase().trim();

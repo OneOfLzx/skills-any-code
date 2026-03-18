@@ -1,61 +1,97 @@
 /**
- * scripts/resolve.js 内容模板（部署到 Skill 目录中的独立脚本，仅使用 Node 内置模块）
+ * scripts/get-summary.py 内容模板（部署到 Skill 目录中的独立脚本，仅使用 Python 标准库）
  *
  * 约定：
- * - 输入：命令行参数 argv[2]，应为项目内文件或目录的绝对路径
- * - 行为：读取 resolve-config.json 中的 indexFilePath，打开 analysis-index.json 并在 entries 中查找
+ * - 输入：命令行参数 argv[1]，应为项目内文件或目录「相对项目根目录」的相对路径
+ * - 行为：遵循主程序的结果 md 命名规则，推导目标对象对应的结果 md 路径；若结果 md 存在则输出其相对项目根路径
  * - 输出：
- *   - 命中：stdout 输出对应 Markdown 结果文件的绝对路径（单行）
+ *   - 命中：stdout 输出对应 Markdown 结果文件的相对路径（相对项目根目录，单行）
  *   - 未命中：stdout 输出字符串 "N/A"（单行）
- *   - 读取配置或索引失败：stderr 输出错误信息并以 exit code 1 退出
+ *   - 参数错误：stderr 输出错误信息并以 exit code 1 退出
  */
 export function getResolveScriptContent(): string {
-  return `const fs = require('fs')
-const path = require('path')
+  return `#!/usr/bin/env python3
+from __future__ import annotations
 
-function normalizePath(inputPath) {
-  let normalized = inputPath.replace(/\\\\/g, '/')
-  if (normalized.length > 1 && normalized.endsWith('/')) {
-    normalized = normalized.slice(0, -1)
-  }
-  return normalized
-}
+import os
+import sys
+from pathlib import Path, PurePosixPath
 
-function main() {
-  const inputPath = process.argv[2]
-  if (!inputPath) {
-    process.stderr.write('Usage: node resolve.js <absolute-path>\\n')
-    process.exit(1)
-  }
 
-  const configPath = path.join(__dirname, '..', 'resolve-config.json')
-  let config
-  try {
-    config = JSON.parse(fs.readFileSync(configPath, 'utf-8'))
-  } catch (e) {
-    process.stderr.write('Failed to read resolve-config.json\\n')
-    process.exit(1)
-  }
+DEFAULT_OUTPUT_DIR = ".skill-any-code-result"
 
-  let indexData
-  try {
-    indexData = JSON.parse(fs.readFileSync(config.indexFilePath, 'utf-8'))
-  } catch (e) {
-    process.stderr.write('Failed to read analysis-index.json\\n')
-    process.exit(1)
-  }
 
-  const normalized = normalizePath(inputPath)
-  const entry = indexData.entries[normalized]
+def _to_posix_rel(s: str) -> str:
+  # 最大兼容：支持 \\、./、尾部 /
+  v = (s or "").strip().replace("\\\\", "/")
+  while v.startswith("./"):
+    v = v[2:]
+  # 保留根目录语义："." / "" 视为项目根目录
+  if v in (".", ""):
+    return "."
+  # 裁剪尾部斜杠（目录也允许输入 xxx/）
+  if v.endswith("/") and len(v) > 1:
+    v = v[:-1]
+  return v
 
-  if (entry && entry.resultPath) {
-    process.stdout.write(entry.resultPath + '\\n')
-  } else {
-    process.stdout.write('N/A\\n')
-  }
-  process.exit(0)
-}
 
-main()
+def _detect_project_root(script_path: Path) -> Path:
+  # 约定：<projectRoot>/.agents/skills/skill-any-code/scripts/get-summary.py
+  # parents: [scripts, skill-any-code, skills, .agents, projectRoot, ...]
+  return script_path.resolve().parents[4]
+
+
+def _file_md_rel(target_rel: str) -> PurePosixPath:
+  p = PurePosixPath(target_rel)
+  dir_part = str(p.parent) if str(p.parent) not in (".", "") else ""
+  stem = p.stem
+  suffix = p.suffix  # includes leading '.' or ''
+
+  if stem == "index" and suffix:
+    name = f"index{suffix}.md"
+  else:
+    name = f"{stem}.md"
+
+  if dir_part:
+    return PurePosixPath(DEFAULT_OUTPUT_DIR) / dir_part / name
+  return PurePosixPath(DEFAULT_OUTPUT_DIR) / name
+
+
+def _dir_md_rel(target_rel: str) -> PurePosixPath:
+  if target_rel in (".", ""):
+    return PurePosixPath(DEFAULT_OUTPUT_DIR) / "index.md"
+  return PurePosixPath(DEFAULT_OUTPUT_DIR) / target_rel / "index.md"
+
+
+def main() -> int:
+  if len(sys.argv) < 2 or not sys.argv[1]:
+    sys.stderr.write("Usage: python get-summary.py <relative-path>\\n")
+    return 1
+
+  raw = sys.argv[1]
+  raw_posix = raw.replace("\\\\", "/").strip()
+  rel = _to_posix_rel(raw)
+
+  project_root = _detect_project_root(Path(__file__))
+  target_abs = (project_root / PurePosixPath(rel)).resolve()
+
+  if not target_abs.exists():
+    sys.stdout.write("N/A\\n")
+    return 0
+
+  # 输入可能是目录（含尾 /）或真实目录
+  is_dir = target_abs.is_dir() or raw_posix.endswith("/")
+  md_rel = _dir_md_rel(rel) if is_dir else _file_md_rel(rel)
+  md_abs = (project_root / Path(os.fspath(md_rel))).resolve()
+
+  if md_abs.exists():
+    sys.stdout.write(str(md_rel).replace("\\\\", "/") + "\\n")
+  else:
+    sys.stdout.write("N/A\\n")
+  return 0
+
+
+if __name__ == "__main__":
+  raise SystemExit(main())
 `
 }

@@ -8,8 +8,8 @@ import * as os from 'os';
 export interface CreateTestProjectOptions {
   files?: string[];
   directories?: string[];
-  /** 可选：在项目根写入 .code-analyze-ignore 内容 */
-  codeAnalyzeIgnore?: string;
+  /** 可选：在项目根写入 .skill-any-code-ignore 内容 */
+  skillAnyCodeIgnore?: string;
   /** 可选：在项目根写入 .gitignore 内容 */
   gitignore?: string;
 }
@@ -23,7 +23,7 @@ export async function createTestProject(
   projectDir: string,
   options: CreateTestProjectOptions = {}
 ): Promise<void> {
-  const { files = [], directories = [], codeAnalyzeIgnore, gitignore } = options;
+  const { files = [], directories = [], skillAnyCodeIgnore, gitignore } = options;
   await fs.ensureDir(projectDir);
 
   for (const dir of directories) {
@@ -36,8 +36,8 @@ export async function createTestProject(
     await fs.writeFile(fullPath, DEFAULT_FILE_CONTENT, 'utf-8');
   }
 
-  if (codeAnalyzeIgnore !== undefined) {
-    await fs.writeFile(path.join(projectDir, '.code-analyze-ignore'), codeAnalyzeIgnore, 'utf-8');
+  if (skillAnyCodeIgnore !== undefined) {
+    await fs.writeFile(path.join(projectDir, '.skill-any-code-ignore'), skillAnyCodeIgnore, 'utf-8');
   }
 
   if (gitignore !== undefined) {

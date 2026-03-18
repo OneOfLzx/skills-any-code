@@ -68,7 +68,7 @@ describe('ST-V24-TOK-004: LLM 重试场景下 Token 统计合理性', () => {
 
       // 2. 构造一个小型测试项目，仅 1 个文件，方便判断「预期成功调用次数约为常数级」
       const projectDir = await fs.mkdtemp(
-        path.join(os.tmpdir(), 'code-analyze-tok-retry-'),
+        path.join(os.tmpdir(), 'skill-any-code-tok-retry-'),
       );
       let tempHome: string | undefined;
       try {
@@ -78,7 +78,7 @@ describe('ST-V24-TOK-004: LLM 重试场景下 Token 统计合理性', () => {
           'utf-8',
         );
 
-        tempHome = await fs.mkdtemp(path.join(os.tmpdir(), 'ca-tok-retry-home-'));
+        tempHome = await fs.mkdtemp(path.join(os.tmpdir(), 'sac-tok-retry-home-'));
         await createTestConfigInDir(tempHome, {
           llmBaseUrl: mock.baseUrl,
           llmApiKey: 'test',

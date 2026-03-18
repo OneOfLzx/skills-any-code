@@ -73,7 +73,6 @@ describe('Full process integration test', () => {
     const storageRoot = storageService.getStoragePath(projectSlug);
 
     // 验证核心文件存在（V2.2 起根目录为 index.md，不再生成 PROJECT_SUMMARY.md）
-    await AssertUtils.fileExists(path.join(storageRoot, '.analysis_metadata.json'));
     await AssertUtils.fileExists(path.join(storageRoot, 'index.md'));
 
     // 验证源码目录分析文件存在
@@ -86,11 +85,8 @@ describe('Full process integration test', () => {
     await AssertUtils.validMarkdownFile(path.join(storageRoot, 'index.md'));
     await AssertUtils.validMarkdownFile(path.join(storageRoot, 'src', 'index.md'));
 
-    // 验证元数据结构正确
-    const metadata = await storageService.getMetadata(projectSlug);
-    AssertUtils.validMetadata(metadata!);
-    expect(metadata?.projectRoot).toBe(testProject.path);
-    expect(metadata?.gitCommits.length).toBeGreaterThan(0);
+    // V2.6：不再生成 .analysis_metadata.json
+    expect(await fs.pathExists(path.join(storageRoot, '.analysis_metadata.json'))).toBe(false);
 
     // V2.2 起无 getProjectSummary，根目录概述由 index.md 承担
 

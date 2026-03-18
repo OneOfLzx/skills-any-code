@@ -40,9 +40,9 @@ describe('13.3 目录级 Markdown 功能描述 (ST-DIR-MD-CONTENT-001)', () => {
   });
 
   beforeEach(async () => {
-    testDir = mkdtemp('code-analyze-dir-md');
+    testDir = mkdtemp('skill-any-code-dir-md');
     mock = await startMockOpenAIServer();
-    tempHome = mkdtemp('ca-dir-md-home');
+    tempHome = mkdtemp('sac-dir-md-home');
     await fs.ensureDir(tempHome);
     await createTestConfigInDir(tempHome, { llmBaseUrl: mock.baseUrl, llmApiKey: 'test', llmModel: 'mock' });
     process.env.HOME = tempHome;
@@ -81,7 +81,7 @@ describe('13.3 目录级 Markdown 功能描述 (ST-DIR-MD-CONTENT-001)', () => {
       { cwd: repoRoot, env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome } }
     );
 
-    const resultRoot = path.join(testDir, '.code-analyze-result');
+    const resultRoot = path.join(testDir, '.skill-any-code-result');
     const dirIndexPath = path.join(resultRoot, 'models/SenseVoiceSmall/example/index.md');
     expect(await fs.pathExists(dirIndexPath)).toBe(true);
 
@@ -113,9 +113,9 @@ describe('13.4 文件/目录命名冲突 (ST-PATH-CONFLICT-INDEX-001)', () => {
   });
 
   beforeEach(async () => {
-    testDir = mkdtemp('code-analyze-index-conflict');
+    testDir = mkdtemp('skill-any-code-index-conflict');
     mock = await startMockOpenAIServer();
-    tempHome = mkdtemp('ca-index-conflict-home');
+    tempHome = mkdtemp('sac-index-conflict-home');
     await fs.ensureDir(tempHome);
     await createTestConfigInDir(tempHome, { llmBaseUrl: mock.baseUrl, llmApiKey: 'test', llmModel: 'mock' });
     process.env.HOME = tempHome;
@@ -147,7 +147,7 @@ describe('13.4 文件/目录命名冲突 (ST-PATH-CONFLICT-INDEX-001)', () => {
       { cwd: repoRoot, env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome } }
     );
 
-    const resultRoot = path.join(testDir, '.code-analyze-result');
+    const resultRoot = path.join(testDir, '.skill-any-code-result');
     const coreResultDir = path.join(resultRoot, 'x', 'core');
 
     const dirIndexPath = path.join(coreResultDir, 'index.md');
@@ -156,20 +156,6 @@ describe('13.4 文件/目录命名冲突 (ST-PATH-CONFLICT-INDEX-001)', () => {
     expect(await fs.pathExists(dirIndexPath)).toBe(true);
     expect(await fs.pathExists(fileResultPath)).toBe(true);
 
-    const indexPath = path.join(resultRoot, 'analysis-index.json');
-    expect(await fs.pathExists(indexPath)).toBe(true);
-    const indexData = await fs.readJson(indexPath);
-    const entries = indexData.entries || {};
-    const projectRootNorm = path.resolve(testDir).replace(/\\/g, '/');
-    const coreDirKey = `${projectRootNorm}/x/core`;
-    const indexPyKey = `${projectRootNorm}/x/core/index.py`;
-
-    expect(entries[coreDirKey]).toBeDefined();
-    expect(entries[coreDirKey].type).toBe('directory');
-    expect(entries[coreDirKey].resultPath).toMatch(/[\/]x\/core\/index\.md$/);
-
-    expect(entries[indexPyKey]).toBeDefined();
-    expect(entries[indexPyKey].type).toBe('file');
-    expect(entries[indexPyKey].resultPath).toMatch(/[\/]x\/core\/index\.py\.md$/);
+    // V2.6：不再生成 analysis-index.json，这里仅验证产物路径命名规则与存在性。
   }, 60000);
 });

@@ -60,7 +60,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
   let tempHome: string;
 
   beforeEach(async () => {
-    tempHome = path.join(os.tmpdir(), `ca-v25-home-${Date.now()}`);
+    tempHome = path.join(os.tmpdir(), `sac-v25-home-${Date.now()}`);
     await fs.remove(tempHome);
     await fs.ensureDir(tempHome);
     process.env.HOME = tempHome;
@@ -81,9 +81,9 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     ]);
 
     expect(result.code).toBe(1);
-    expect(result.stderr).toContain('配置文件未初始化，请先执行 "code-analyze init"');
+    expect(result.stderr).toContain('Config is not initialized. Run "skill-any-code init"');
 
-    const defaultConfigPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const defaultConfigPath = path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
     const exists = await fs.pathExists(defaultConfigPath);
     expect(exists).toBe(false);
 
@@ -94,7 +94,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     const testProject = await TestProjectFactory.create('small', false);
     const mock = await startMockOpenAIServer();
 
-    const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const configPath = path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
     const initResult = await runCli(['init']);
     expect(initResult.code).toBe(0);
 
@@ -117,7 +117,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
   test('ST-LLM-CONNECT-001: LLM 配置缺失导致 connect 阶段失败，不进入解析流程', async () => {
     const testProject = await TestProjectFactory.create('small', false);
 
-    const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const configPath = path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
     const initResult = await runCli(['init']);
     expect(initResult.code).toBe(0);
 
@@ -126,7 +126,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     ]);
 
     expect(result.code).toBe(1);
-    expect(result.stderr).toContain('LLM 连接/配置校验失败');
+    expect(result.stderr).toContain('LLM connectivity/config validation failed');
 
     await testProject.cleanup();
   }, 120000);
@@ -134,7 +134,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
   test('ST-LLM-CONNECT-002: base_url 指向不可达地址时 connect 阶段失败', async () => {
     const testProject = await TestProjectFactory.create('small', false);
 
-    const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const configPath = path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
     const initResult = await runCli(['init']);
     expect(initResult.code).toBe(0);
 
@@ -148,7 +148,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     ]);
 
     expect(result.code).toBe(1);
-    expect(result.stderr).toContain('LLM 连接/配置校验失败');
+    expect(result.stderr).toContain('LLM connectivity/config validation failed');
 
     await testProject.cleanup();
   }, 120000);
@@ -160,7 +160,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
       failRequestBodyIncludes: ['health-check'],
     });
 
-    const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const configPath = path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
     const initResult = await runCli(['init']);
     expect(initResult.code).toBe(0);
 
@@ -177,7 +177,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
 
     // Windows 下 SDK 可能返回崩溃码（如 3221226505），接受任意非零退出
     expect(result.code).not.toBe(0);
-    expect(result.stderr).toContain('LLM 连接/配置校验失败');
+    expect(result.stderr).toContain('LLM connectivity/config validation failed');
     // 若流程到达 Mock 并返回 5xx，stderr 应包含 mock 错误信息；若在配置校验阶段失败，则不再强制要求 mock 错误
     if (result.stderr.includes('mock server error') || result.stderr.includes('mock server error (injected)')) {
       expect(result.stderr).toMatch(/mock server error/);
@@ -191,7 +191,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     const testProject = await TestProjectFactory.create('small', false);
     const mock = await startMockOpenAIServer();
 
-    const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const configPath = path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
     const initResult = await runCli(['init']);
     expect(initResult.code).toBe(0);
 
@@ -199,7 +199,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     yaml = replaceLlmInYaml(yaml, { base_url: mock.baseUrl, api_key: 'test', model: 'mock', cache_max_size_mb: 1 });
     await fs.writeFile(configPath, yaml, 'utf-8');
 
-    const cacheDir = path.join(os.homedir(), '.cache', 'code-analyze', 'llm');
+    const cacheDir = path.join(os.homedir(), '.cache', 'skill-any-code', 'llm');
 
     // 多次执行 analyze，驱动缓存写入与清理
     for (let i = 0; i < 3; i++) {
@@ -229,7 +229,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     const testProject = await TestProjectFactory.create('small', false);
     const mock = await startMockOpenAIServer();
 
-    const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const configPath = path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
     const initResult = await runCli(['init']);
     expect(initResult.code).toBe(0);
 
@@ -238,7 +238,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     yaml = replaceLlmInYaml(yaml, { base_url: mock.baseUrl, api_key: 'test', model: 'mock', cache_max_size_mb: 0 });
     await fs.writeFile(configPath, yaml, 'utf-8');
 
-    const cacheDir = path.join(os.homedir(), '.cache', 'code-analyze', 'llm');
+    const cacheDir = path.join(os.homedir(), '.cache', 'skill-any-code', 'llm');
 
     // 确保起始状态下缓存目录不存在
     const existsBefore = await fs.pathExists(cacheDir);
@@ -290,7 +290,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
       'export const hello = () => "world";',
     );
 
-    const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const configPath = path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
     const initResult = await runCli(['init']);
     expect(initResult.code).toBe(0);
 
@@ -304,20 +304,9 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
 
     expect(result.code).toBe(0);
 
-    const resultDir = path.join(projectPath, '.code-analyze-result');
-    const indexPath = path.join(resultDir, 'analysis-index.json');
-    const indexExists = await fs.pathExists(indexPath);
-    expect(indexExists).toBe(true);
-
-    const indexData = await fs.readJson(indexPath);
-    const entries = indexData.entries ?? {};
-    const keys: string[] = Object.keys(entries);
-
-    // 默认黑名单应使所有图片文件不进入索引
+    const resultDir = path.join(projectPath, '.skill-any-code-result');
+    // 默认黑名单应使所有图片文件不生成 Markdown
     for (const name of imageFiles) {
-      const srcPath = path.join(projectPath, 'assets', name).replace(/\\/g, '/');
-      expect(keys.some((k) => k.endsWith(`/assets/${name}`) || k === srcPath)).toBe(false);
-
       const mdPath = path.join(resultDir, 'assets', `${path.parse(name).name}.md`);
       expect(await fs.pathExists(mdPath)).toBe(false);
     }
@@ -326,7 +315,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     await testProject.cleanup();
   }, 240000);
 
-  test('ST-BLACKLIST-IMG-002: 通过 .code-analyze-ignore 解封部分图片后可进入索引/生成 Markdown', async () => {
+  test('ST-BLACKLIST-IMG-002: 通过 .skill-any-code-ignore 解封部分图片后可进入索引/生成 Markdown', async () => {
     const testProject = await TestProjectFactory.create('empty', false);
     const projectPath = testProject.path;
     const mock = await startMockOpenAIServer();
@@ -338,9 +327,9 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
     await fs.writeFile(path.join(projectPath, 'assets', unblocked), 'binary-image-content');
     await fs.writeFile(path.join(projectPath, 'assets', blocked), 'binary-image-content');
 
-    // 通过 .code-analyze-ignore 的否定规则解封指定图片
+    // 通过 .skill-any-code-ignore 的否定规则解封指定图片
     await fs.writeFile(
-      path.join(projectPath, '.code-analyze-ignore'),
+      path.join(projectPath, '.skill-any-code-ignore'),
       `!assets/${unblocked}\n`,
       'utf-8',
     );
@@ -351,7 +340,7 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
       'export const hello = () => "world";',
     );
 
-    const configPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const configPath = path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
     const initResult = await runCli(['init']);
     expect(initResult.code).toBe(0);
 
@@ -365,29 +354,13 @@ describe('V2.5 配置初始化与 LLM 连接 (ST-CONFIG-INIT-*/ST-LLM-CONNECT-*/
 
     expect(result.code).toBe(0);
 
-    const resultDir = path.join(projectPath, '.code-analyze-result');
-    const indexPath = path.join(resultDir, 'analysis-index.json');
-    const indexExists = await fs.pathExists(indexPath);
-    expect(indexExists).toBe(true);
+    const resultDir = path.join(projectPath, '.skill-any-code-result');
 
-    const indexData = await fs.readJson(indexPath);
-    const entries = indexData.entries ?? {};
-    const keys: string[] = Object.keys(entries);
-
-    const unblockedSrc = path.join(projectPath, 'assets', unblocked).replace(/\\/g, '/');
-    const blockedSrc = path.join(projectPath, 'assets', blocked).replace(/\\/g, '/');
-
-    // 被解封的图片应当进入索引并生成 Markdown
-    expect(
-      keys.some((k) => k.endsWith(`/assets/${unblocked}`) || k === unblockedSrc),
-    ).toBe(true);
+    // 被解封的图片应当生成 Markdown
     const unblockedMd = path.join(resultDir, 'assets', `${path.parse(unblocked).name}.md`);
     expect(await fs.pathExists(unblockedMd)).toBe(true);
 
-    // 未解封的图片仍应被黑名单过滤
-    expect(
-      keys.some((k) => k.endsWith(`/assets/${blocked}`) || k === blockedSrc),
-    ).toBe(false);
+    // 未解封的图片仍应被黑名单过滤（不生成 Markdown）
     const blockedMd = path.join(resultDir, 'assets', `${path.parse(blocked).name}.md`);
     expect(await fs.pathExists(blockedMd)).toBe(false);
 

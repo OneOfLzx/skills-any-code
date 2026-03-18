@@ -7,7 +7,7 @@ import { Config } from '../../src/common/config';
 describe('ConfigManager 配置路径测试 (UT-CFG-*)', () => {
   const originalHome = process.env.HOME;
   const originalUserProfile = process.env.USERPROFILE;
-  const tempHome = path.join(os.tmpdir(), 'code-analyze-test-config');
+  const tempHome = path.join(os.tmpdir(), 'skill-any-code-test-config');
   
   beforeEach(async () => {
     delete process.env.HOME;
@@ -50,7 +50,7 @@ describe('ConfigManager 配置路径测试 (UT-CFG-*)', () => {
 
     expect((configManager as any).configPath).toBe(customPath);
 
-    const defaultPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const defaultPath = path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
     const defaultExists = await fs.pathExists(defaultPath);
     expect(defaultExists).toBe(false);
 
@@ -63,7 +63,7 @@ describe('ConfigManager 配置路径测试 (UT-CFG-*)', () => {
 
     await configManager.load();
 
-    const expectedPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const expectedPath = path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
     expect((configManager as any).configPath).toBe(expectedPath);
 
     const exists = await fs.pathExists(expectedPath);
@@ -78,7 +78,7 @@ describe('ConfigManager 配置路径测试 (UT-CFG-*)', () => {
 
     await configManager.load();
 
-    const expectedPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+    const expectedPath = path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
     expect((configManager as any).configPath).toBe(expectedPath);
   });
 

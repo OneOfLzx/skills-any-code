@@ -20,7 +20,7 @@ export interface TestProject {
  * 创建测试项目工厂函数
  */
 export class TestProjectFactory {
-  private static tempDir = path.join(os.tmpdir(), 'code-analyze-tests');
+  private static tempDir = path.join(os.tmpdir(), 'skill-any-code-tests');
 
   /**
    * 初始化临时目录

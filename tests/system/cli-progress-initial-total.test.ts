@@ -62,7 +62,7 @@ describe('CLI 进度条首帧 total 非魔法数字回归 (E2E-CLI-PROG-INIT-*)'
       for (const entry of entries) {
         if (
           entry.isDirectory() &&
-          (entry.name === '.code-analyze-result' || entry.name === '.code-analyze-internal')
+          (entry.name === '.skill-any-code-result' || entry.name === '.skill-any-code-internal')
         ) {
           continue;
         }
@@ -91,7 +91,7 @@ describe('CLI 进度条首帧 total 非魔法数字回归 (E2E-CLI-PROG-INIT-*)'
 
       try {
         mock = await startMockOpenAIServer();
-        tempHome = path.join(os.tmpdir(), `ca-prog-init-home-${Date.now()}`);
+        tempHome = path.join(os.tmpdir(), `sac-prog-init-home-${Date.now()}`);
         await fs.ensureDir(tempHome);
         await createTestConfigInDir(tempHome, {
           llmBaseUrl: mock.baseUrl,
@@ -124,11 +124,11 @@ describe('CLI 进度条首帧 total 非魔法数字回归 (E2E-CLI-PROG-INIT-*)'
 
         let firstProgressTotal: number | null = null;
 
-        // 兼容两种输出格式：
-        // 1) 单行：解析进度 ... 已处理: 0/total 对象
-        // 2) 双行：解析进度 ...（下一行）已处理: 0/total 对象
-        const mInline = /解析进度[^\n]*已处理:\s*0\/(\d+)\s*对象/.exec(combined);
-        const mSplit = /解析进度[^\n]*\n已处理:\s*0\/(\d+)\s*对象/.exec(combined);
+        // Compatibility:
+        // 1) Single-line: Progress ... Processed: 0/total
+        // 2) Two-line: Progress ... (next line) Processed: 0/total
+        const mInline = /Progress[^\n]*Processed:\s*0\/(\d+)/.exec(combined);
+        const mSplit = /Progress[^\n]*\nProcessed:\s*0\/(\d+)/.exec(combined);
         const m = mInline ?? mSplit;
         if (m) firstProgressTotal = Number(m[1]);
 
@@ -155,7 +155,7 @@ describe('CLI 进度条首帧 total 非魔法数字回归 (E2E-CLI-PROG-INIT-*)'
 
       try {
         mock = await startMockOpenAIServer();
-        tempHome = path.join(os.tmpdir(), `ca-prog-init-home-${Date.now()}`);
+        tempHome = path.join(os.tmpdir(), `sac-prog-init-home-${Date.now()}`);
         await fs.ensureDir(tempHome);
         await createTestConfigInDir(tempHome, {
           llmBaseUrl: mock.baseUrl,
@@ -186,7 +186,7 @@ describe('CLI 进度条首帧 total 非魔法数字回归 (E2E-CLI-PROG-INIT-*)'
         const combined = stripAnsi((stdout ?? '') + (stderr ?? '')).replace(/\r/g, '\n');
         expect(code).toBe(0);
 
-        expect(combined).not.toMatch(/解析进度[^\n]*已处理:\s*0\/100\s*对象/);
+        expect(combined).not.toMatch(/Progress[^\n]*Processed:\s*0\/100/);
       } finally {
         if (mock) {
           await mock.close();

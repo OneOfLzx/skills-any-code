@@ -11,9 +11,9 @@ function findJsonFiles(files: string[]): string[] {
 }
 
 describe('Unit: Storage 输出策略（结果目录不应出现 JSON）', () => {
-  test('UT-STORAGE-OUTPUT-001: saveFileAnalysis/saveDirectoryAnalysis 不应输出 per-file/per-dir json（允许集中 metadata/index）', async () => {
-    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ca-ut-storage-output-'));
-    const outputDir = '.code-analyze-result';
+  test('UT-STORAGE-OUTPUT-001: saveFileAnalysis/saveDirectoryAnalysis 不应输出任何 json（仅 md）', async () => {
+    const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'sac-ut-storage-output-'));
+    const outputDir = '.skill-any-code-result';
 
     try {
       const storage = new LocalStorageService(projectRoot, outputDir);
@@ -62,10 +62,7 @@ describe('Unit: Storage 输出策略（结果目录不应出现 JSON）', () => 
       const storageRoot = getStoragePath(projectRoot, outputDir);
       const resultFiles = await listAllFilesRecursively(storageRoot);
       const jsons = findJsonFiles(resultFiles);
-
-      const allowed = new Set(['.analysis_metadata.json', 'analysis-index.json']);
-      const violations = jsons.filter((rel) => !allowed.has(rel));
-      expect(violations).toEqual([]);
+      expect(jsons).toEqual([]);
       // 至少有 md 产物
       expect(resultFiles.some((p) => p.toLowerCase().endsWith('.md'))).toBe(true);
     } finally {

@@ -16,9 +16,9 @@ describe('CLI 多语言解析测试 (UT-CLI-*)', () => {
   const originalUserProfile = process.env.USERPROFILE;
 
   beforeEach(async () => {
-    testDir = await fs.mkdtemp(path.join(os.tmpdir(), 'code-analyze-test-'));
+    testDir = await fs.mkdtemp(path.join(os.tmpdir(), 'skill-any-code-test-'));
     mock = await startMockOpenAIServer();
-    tempHome = path.join(os.tmpdir(), `ca-cli-analyze-home-${Date.now()}`);
+    tempHome = path.join(os.tmpdir(), `sac-cli-analyze-home-${Date.now()}`);
     await fs.ensureDir(tempHome);
     await createTestConfigInDir(tempHome, {
       llmBaseUrl: mock.baseUrl,
@@ -57,12 +57,11 @@ describe('CLI 多语言解析测试 (UT-CLI-*)', () => {
       { cwd: repoRoot, env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome } }
     );
     expect(stderr).toBe('');
-    expect(stdout).toMatch(/解析完成！共分析 \d+ 个文件/);
-    const match = stdout.match(/共分析 (\d+) 个文件/);
-    expect(match && parseInt(match[1], 10)).toBeGreaterThanOrEqual(5);
+    // V2.6：CLI 输出口径改为“共处理 X 个对象（文件+目录）”
+    expect(stdout).toMatch(/解析完成！共处理\s+\d+\s+个对象/);
 
     // 验证结果目录与根 index.md 存在（V2.2 起根目录为 index.md，不再生成 PROJECT_SUMMARY.md）
-    const resultDir = path.join(testDir, '.code-analyze-result');
+    const resultDir = path.join(testDir, '.skill-any-code-result');
     expect(await fs.pathExists(resultDir)).toBe(true);
     expect(await fs.pathExists(path.join(resultDir, 'index.md'))).toBe(true);
 
@@ -80,35 +79,7 @@ describe('CLI 多语言解析测试 (UT-CLI-*)', () => {
   /**
    * ST-V23-INDEX-INTEGRITY-001（第12章 12.3.3）：全量解析后索引条目数与 resultPath 对应文件存在性
    */
-  test('ST-V23-INDEX-INTEGRITY-001: 索引 entries 中 file/directory 数量与 resultPath 对应 .md 均存在', async () => {
-    await fs.ensureDir(path.join(testDir, 'src'));
-    await fs.writeFile(path.join(testDir, 'src/a.ts'), 'export const a = 1;', 'utf-8');
-    await fs.writeFile(path.join(testDir, 'src/b.ts'), 'export const b = 2;', 'utf-8');
-
-    await execAsync(
-      `node dist/cli.js --path "${testDir}" --mode full --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0`,
-      { cwd: repoRoot, env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome } }
-    );
-
-    const resultRoot = path.join(testDir, '.code-analyze-result');
-    const indexPath = path.join(resultRoot, 'analysis-index.json');
-    expect(await fs.pathExists(indexPath)).toBe(true);
-
-    const indexData = await fs.readJson(indexPath);
-    expect(indexData).toHaveProperty('entries');
-    const entries = indexData.entries as Record<string, { resultPath: string; type: string }>;
-    const entryList = Object.entries(entries);
-
-    const fileCount = entryList.filter(([, e]) => e.type === 'file').length;
-    const dirCount = entryList.filter(([, e]) => e.type === 'directory').length;
-    expect(fileCount).toBeGreaterThanOrEqual(2);
-    expect(dirCount).toBeGreaterThanOrEqual(1);
-
-    for (const [, entry] of entryList) {
-      const resultPath = path.isAbsolute(entry.resultPath) ? entry.resultPath : path.join(resultRoot, entry.resultPath);
-      expect(await fs.pathExists(resultPath)).toBe(true);
-    }
-  }, 60000);
+  test.skip('ST-V23-INDEX-INTEGRITY-001: 旧版索引校验（V2.6 起不再生成 analysis-index.json）', async () => {}, 60000);
 
   /**
    * UT-CLI-012: 无后缀文件CLI解析测试
@@ -124,17 +95,13 @@ describe('CLI 多语言解析测试 (UT-CLI-*)', () => {
       { cwd: repoRoot, env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome } }
     );
     expect(stderr).toBe('');
-    expect(stdout).toMatch(/解析完成！共分析 \d+ 个文件/);
-    const match = stdout.match(/共分析 (\d+) 个文件/);
-    expect(match && parseInt(match[1], 10)).toBeGreaterThanOrEqual(3);
+    expect(stdout).toMatch(/Analysis completed\. Processed\s+\d+\s+object\(s\)/);
 
     // 验证结果文件存在
-    const resultDir = path.join(testDir, '.code-analyze-result');
+    const resultDir = path.join(testDir, '.skill-any-code-result');
     expect(await fs.pathExists(resultDir)).toBe(true);
     expect(await fs.pathExists(path.join(resultDir, 'Dockerfile.md'))).toBe(true);
     expect(await fs.pathExists(path.join(resultDir, 'Makefile.md'))).toBe(true);
     expect(await fs.pathExists(path.join(resultDir, 'run.md'))).toBe(true);
-    // V2.3 应生成索引文件
-    expect(await fs.pathExists(path.join(resultDir, 'analysis-index.json'))).toBe(true);
   });
 });

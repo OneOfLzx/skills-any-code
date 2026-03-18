@@ -11,7 +11,7 @@ export class BlacklistService implements IBlacklistService {
 
     this.ig.add(globalBlacklist)
 
-    const projectIgnorePath = path.join(projectRoot, '.code-analyze-ignore')
+    const projectIgnorePath = path.join(projectRoot, '.skill-any-code-ignore')
     if (await fs.pathExists(projectIgnorePath)) {
       const content = await fs.readFile(projectIgnorePath, 'utf-8')
       this.ig.add(content)

@@ -11,12 +11,15 @@ import { createTestProject, mkdtemp } from '../../utils/create-test-project';
 const indexService = new IndexService();
 
 describe('索引文件生成与解析 (V23-INDEX)', () => {
+  // V2.6 起不再生成 analysis-index.json，保留历史用例但默认跳过
+  // eslint-disable-next-line jest/no-disabled-tests
+  describe.skip('V2.6: index 已废弃', () => {
   let testProjectDir: string;
   let resultDir: string;
 
   beforeEach(async () => {
-    testProjectDir = mkdtemp('code-analyze-index');
-    resultDir = path.join(testProjectDir, '.code-analyze-result');
+    testProjectDir = mkdtemp('skill-any-code-index');
+    resultDir = path.join(testProjectDir, '.skill-any-code-result');
     await fs.ensureDir(resultDir);
   });
 
@@ -164,5 +167,6 @@ describe('索引文件生成与解析 (V23-INDEX)', () => {
   it('UT-V23-INDEX-004: 索引不存在时 readIndex 返回 null', async () => {
     const read = await indexService.readIndex(resultDir);
     expect(read).toBeNull();
+  });
   });
 });

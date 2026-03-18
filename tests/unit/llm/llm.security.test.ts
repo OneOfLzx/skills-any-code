@@ -14,7 +14,7 @@ describe('LLM安全与统计测试（V2.1）', () => {
   const originalUserProfile = process.env.USERPROFILE;
 
   beforeAll(async () => {
-    tempHome = path.join(os.tmpdir(), `ca-llm-security-${Date.now()}`);
+    tempHome = path.join(os.tmpdir(), `sac-llm-security-${Date.now()}`);
     await fs.ensureDir(tempHome);
     await createTestConfigInDir(tempHome, { llmBaseUrl: 'http://127.0.0.1:1', llmApiKey: 'x', llmModel: 'x' });
     process.env.HOME = tempHome;
@@ -51,7 +51,7 @@ describe('LLM安全与统计测试（V2.1）', () => {
     } as any;
 
     const splitter = new CodeSplitter(llmClient);
-    const cache = new FileHashCache({ cacheDir: 'C:\\temp\\code-analyze-test-cache', maxSizeMb: 0 });
+    const cache = new FileHashCache({ cacheDir: 'C:\\temp\\skill-any-code-test-cache', maxSizeMb: 0 });
     await cache.clear();
 
     const svc = new LLMAnalysisService(
@@ -69,7 +69,7 @@ describe('LLM安全与统计测试（V2.1）', () => {
         retry_delay: 1,
         context_window_size: 1000,
         cache_enabled: false,
-        cache_dir: 'C:\\\\temp\\\\code-analyze-test-cache',
+        cache_dir: 'C:\\\\temp\\\\skill-any-code-test-cache',
       } as any
     );
 

@@ -1,11 +1,11 @@
 {
-  "name": "code-analyze-cli",
-  "version": "2.0.0",
-  "description": "独立的大型项目代码理解与分析CLI工具",
+  "name": "skill-any-code",
+  "version": "1.0.0",
+  "description": "Skill Any Code: CLI tool for large codebase understanding and analysis",
   "main": "dist/index.js",
   "bin": {
-    "code-analyze": "dist/cli.js",
-    "ca": "dist/cli.js"
+    "skill-any-code": "dist/cli.js",
+    "sac": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",

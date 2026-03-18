@@ -19,7 +19,7 @@ describe('System: 结果目录文件白名单契约（应用层）', () => {
   });
 
   test(
-    'ST-RESULT-WHITELIST-APP-001: full 模式下结果目录只允许 .md 与集中 JSON（metadata/index），不允许 per-file/per-dir JSON',
+    'ST-RESULT-WHITELIST-APP-001: full 模式下结果目录只允许 .md（不允许任何 JSON）',
     async () => {
       const mock = await startMockOpenAIServer();
       const testProject = await TestProjectFactory.create('small', false);
@@ -28,11 +28,11 @@ describe('System: 结果目录文件白名单契约（应用层）', () => {
       const outputDir = '.result-whitelist-system';
 
       try {
-        // AnalysisAppService 会从默认 "~/.config/code-analyze/config.yaml" 加载配置。
+        // AnalysisAppService 会从默认 "~/.config/skill-any-code/config.yaml" 加载配置。
         // 为避免依赖真实用户 HOME，这里将 HOME/USERPROFILE 临时指向 tmp 并写入测试配置。
         const prevHome = process.env.HOME;
         const prevUserProfile = process.env.USERPROFILE;
-        const fakeHome = path.join(os.tmpdir(), `ca-whitelist-home-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+        const fakeHome = path.join(os.tmpdir(), `sac-whitelist-home-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
         await fs.ensureDir(fakeHome);
         process.env.HOME = fakeHome;
         process.env.USERPROFILE = fakeHome;
@@ -74,8 +74,7 @@ describe('System: 结果目录文件白名单契约（应用层）', () => {
           expect(exists).toBe(true);
 
           const files = await listAllFilesRecursively(storageRoot);
-          // 断言：结果目录中仅存在 .md 结果文件及集中 JSON
-          // （.analysis_metadata.json / analysis-index.json），不应出现 per-file/per-dir JSON。
+          // 断言：结果目录中仅存在 .md 结果文件，不应出现任何 JSON。
           assertOnlyAllowedResultFiles(files);
         } finally {
           // 恢复环境变量（尽量不影响后续测试）

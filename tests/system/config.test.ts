@@ -10,7 +10,7 @@ const execAsync = promisify(exec);
 describe('Config System Test (ST-CFG-*)', () => {
   const originalHome = process.env.HOME;
   const originalUserProfile = process.env.USERPROFILE;
-  const tempHome = path.join(os.tmpdir(), 'code-analyze-test-st-config');
+  const tempHome = path.join(os.tmpdir(), 'skill-any-code-test-st-config');
   let tempProjectDir: string;
   const cliPath = path.join(__dirname, '../../dist/cli.js');
   const originalCwd = process.cwd();
@@ -25,7 +25,7 @@ describe('Config System Test (ST-CFG-*)', () => {
     await fs.remove(tempHome);
     await fs.ensureDir(tempHome);
     
-    tempProjectDir = await fs.mkdtemp(path.join(os.tmpdir(), 'code-analyze-test-st-project-'));
+    tempProjectDir = await fs.mkdtemp(path.join(os.tmpdir(), 'skill-any-code-test-st-project-'));
     await fs.writeFile(path.join(tempProjectDir, 'index.ts'), 'console.log("test");');
     mock = await startMockOpenAIServer();
     
@@ -62,8 +62,8 @@ describe('Config System Test (ST-CFG-*)', () => {
       }
     });
     
-    const expectedConfigPath = path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
-    const projectConfigPath = path.join(tempProjectDir, '~', '.code-analyze', 'config.yaml');
+    const expectedConfigPath = path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
+    const projectConfigPath = path.join(tempProjectDir, '~', '.config', 'skill-any-code', 'config.yaml');
     
     const homeConfigExists = await fs.pathExists(expectedConfigPath);
     expect(homeConfigExists).toBe(true);

@@ -60,7 +60,7 @@ function extractCurrentObjects(output: string): CurrentObjectsSnapshot {
 
   for (const raw of lines) {
     const line = raw.trim();
-    if (/^当前对象[:：]?$/.test(line)) {
+    if (/^Current[:：]?$/.test(line)) {
       if (current && current.length > 0) groups.push(current);
       current = [];
       continue;
@@ -72,7 +72,7 @@ function extractCurrentObjects(output: string): CurrentObjectsSnapshot {
       current = null;
       continue;
     }
-    if (/^(已处理:|Tokens:|解析进度)/.test(line)) {
+    if (/^(Processed:|Tokens:|Progress)/.test(line)) {
       if (current.length > 0) groups.push(current);
       current = null;
       continue;

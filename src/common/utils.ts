@@ -1,5 +1,6 @@
 import * as crypto from 'crypto'
 import * as path from 'path'
+import { DEFAULT_OUTPUT_DIR } from './constants'
 
 /**
  * 规范化路径：统一使用正斜杠、移除尾部斜杠
@@ -23,7 +24,7 @@ export function generateProjectSlug(projectRoot: string, isGit: boolean, gitSlug
 }
 
 export function getStoragePath(projectRoot: string, customOutputDir?: string): string {
-  const outputDir = customOutputDir || './.code-analyze-result'
+  const outputDir = customOutputDir || DEFAULT_OUTPUT_DIR
   // 如果是相对路径，相对于项目根目录
   if (!path.isAbsolute(outputDir)) {
     return path.resolve(projectRoot, outputDir)
@@ -42,6 +43,22 @@ export function getFileOutputPath(storageRoot: string, filePath: string): string
 
 export function getDirOutputPath(storageRoot: string, dirPath: string): string {
   return path.join(storageRoot, dirPath, 'index.md')
+}
+
+/**
+ * 受控并发执行：同时最多 limit 个 fn 在运行，所有 items 执行完毕后 resolve。
+ */
+export async function mapLimit<T>(items: T[], limit: number, fn: (item: T) => Promise<void>): Promise<void> {
+  const concurrency = Math.max(1, Number(limit) || 1)
+  let nextIndex = 0
+  const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (true) {
+      const idx = nextIndex++
+      if (idx >= items.length) return
+      await fn(items[idx])
+    }
+  })
+  await Promise.all(runners)
 }
 
 export function getLanguageFromExtension(ext: string): string {

@@ -20,13 +20,16 @@ export class OpenAILLMService implements LLMService {
         config = configManager.getConfig();
       }
       
-      if (!config.llm.apiKey) {
-        throw new AppError(ErrorCode.ANALYSIS_EXCEPTION, 'LLM API key not configured. Please set it in config file or via CODE_ANALYZE_LLM_APIKEY environment variable.');
+      if (!config.llm.api_key) {
+        throw new AppError(
+          ErrorCode.ANALYSIS_EXCEPTION,
+          'LLM API key not configured. Please set it in config file or via SKILL_ANY_CODE_LLM_API_KEY environment variable.',
+        );
       }
 
       this.client = new OpenAI({
-        baseURL: config.llm.baseURL,
-        apiKey: config.llm.apiKey,
+        baseURL: config.llm.base_url,
+        apiKey: config.llm.api_key,
       });
     }
     return this.client;

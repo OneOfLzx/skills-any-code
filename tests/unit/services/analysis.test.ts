@@ -127,7 +127,7 @@ describe('AnalysisService 解析服务测试（V2.1 LLM原生）', () => {
     storageService = {
       saveFileAnalysis: jest.fn().mockResolvedValue(true),
       saveDirectoryAnalysis: jest.fn().mockResolvedValue(true),
-      getStoragePath: jest.fn().mockReturnValue(path.join(testProjectRoot, '.code-analyze-result'))
+      getStoragePath: jest.fn().mockReturnValue(path.join(testProjectRoot, '.skill-any-code-result'))
     };
     const blacklistService = {
       load: jest.fn().mockResolvedValue(undefined),

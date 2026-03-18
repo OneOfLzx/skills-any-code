@@ -29,10 +29,10 @@ describe('12.3.4 LLM 部分失败路径 (ST-LLM-PARTIAL-FAIL-001)', () => {
   });
 
   beforeEach(async () => {
-    testDir = mkdtemp('code-analyze-partial-fail');
+    testDir = mkdtemp('skill-any-code-partial-fail');
     // 请求 1 为 connect 测试；2-4 为第 1 个文件三步；5-7 为第 2 个文件；8 为第 3 个文件第 1 步。使第 8 次失败，前 2 个文件成功。
     mock = await startMockOpenAIServer({ failRequestIndices: [8] });
-    tempHome = mkdtemp('ca-partial-fail-home');
+    tempHome = mkdtemp('sac-partial-fail-home');
     await fs.ensureDir(tempHome);
     await createTestConfigInDir(tempHome, {
       llmBaseUrl: mock.baseUrl,
@@ -80,7 +80,7 @@ describe('12.3.4 LLM 部分失败路径 (ST-LLM-PARTIAL-FAIL-001)', () => {
       exitCode = e.code ?? 1;
     }
 
-    const resultRoot = path.join(testDir, '.code-analyze-result');
+    const resultRoot = path.join(testDir, '.skill-any-code-result');
     const oneMd = path.join(resultRoot, 'one.md');
     const twoMd = path.join(resultRoot, 'two.md');
     const threeMd = path.join(resultRoot, 'three.md');

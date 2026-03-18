@@ -19,48 +19,48 @@ const program = new Command();
 
 // 主命令配置
 program
-  .name('code-analyze')
-  .alias('ca')
-  .description('独立的大型项目代码理解与分析工具')
-  .version(version, '-v, --version', '显示版本号')
-  .helpOption('-h, --help', '显示帮助信息')
-  .option('--log-level <level>', '日志级别：debug/info/warn/error')
-  .option('--path <path>', '指定解析的项目根路径', process.cwd())
-  .option('-m, --mode <mode>', '解析模式：full/incremental/auto', 'auto')
-  .option('-d, --depth <number>', '解析深度，默认无限制', '-1')
-  .option('-C, --concurrency <number>', '并行解析并发数（未传时使用 CPU*2，但不超过配置 analyze.max_concurrency）')
-  .option('--output-dir <path>', '自定义结果输出目录')
-  .option('--skills-providers <list>', '逗号分隔的 AI 工具标识列表（opencode/cursor/claude/codex）')
-  .option('--no-skills', '跳过 Skill 生成')
+  .name('skill-any-code')
+  .alias('sac')
+  .description('Skill Any Code: a CLI for large codebase understanding and analysis')
+  .version(version, '-v, --version', 'Show version number')
+  .helpOption('-h, --help', 'Show help information')
+  .option('--log-level <level>', 'Log level: debug/info/warn/error')
+  .option('--path <path>', 'Project root path to analyze', process.cwd())
+  .option('-m, --mode <mode>', 'Analysis mode: full/incremental/auto', 'auto')
+  .option('-d, --depth <number>', 'Max directory depth (-1 = unlimited)', '-1')
+  .option('-C, --concurrency <number>', 'Max concurrent workers (default: CPU*2, capped by analyze.max_concurrency)')
+  .option('--output-dir <path>', 'Custom output directory for results')
+  .option('--skills-providers <list>', 'Comma-separated AI tool providers (opencode/cursor/claude/codex)')
+  .option('--no-skills', 'Skip skill generation')
   // LLM相关参数
-  .option('--llm-base-url <url>', 'LLM API服务地址')
-  .option('--llm-api-key <key>', 'LLM API密钥')
-  .option('--llm-model <model>', 'LLM模型名称')
-  .option('--llm-temperature <number>', 'LLM生成温度（0-2）', parseFloat)
-  .option('--llm-max-tokens <number>', 'LLM最大生成Token数', parseInt)
-  .option('--llm-timeout <ms>', 'LLM调用超时时间（毫秒）', parseInt)
-  .option('--llm-max-retries <number>', 'LLM调用最大重试次数', parseInt)
-  .option('--llm-retry-delay <ms>', 'LLM重试间隔时间（毫秒）', parseInt)
-  .option('--llm-context-window-size <number>', 'LLM上下文窗口大小', parseInt)
-  .option('--no-llm-cache', '禁用LLM解析结果缓存')
-  .option('--llm-cache-dir <path>', 'LLM缓存存储目录')
-  .option('--clear-cache', '清空现有LLM解析缓存后再执行解析');
+  .option('--llm-base-url <url>', 'LLM API base URL')
+  .option('--llm-api-key <key>', 'LLM API key')
+  .option('--llm-model <model>', 'LLM model name')
+  .option('--llm-temperature <number>', 'LLM temperature (0-2)', parseFloat)
+  .option('--llm-max-tokens <number>', 'LLM max output tokens', parseInt)
+  .option('--llm-timeout <ms>', 'LLM request timeout (ms)', parseInt)
+  .option('--llm-max-retries <number>', 'LLM max retries', parseInt)
+  .option('--llm-retry-delay <ms>', 'LLM retry delay (ms)', parseInt)
+  .option('--llm-context-window-size <number>', 'LLM context window size', parseInt)
+  .option('--no-llm-cache', 'Disable LLM result cache')
+  .option('--llm-cache-dir <path>', 'LLM cache directory')
+  .option('--clear-cache', 'Clear existing LLM cache before analyzing');
 
 // init 子命令：显式初始化配置文件（V2.5）
 program
   .command('init')
-  .description('初始化或重置配置文件（V2.5）')
+  .description('Initialize or reset the config file')
   .action(async () => {
     try {
-      const resolvedPath = '~/.config/code-analyze/config.yaml';
+      const resolvedPath = '~/.config/skill-any-code/config.yaml';
       const fsPath = resolvedPath.replace('~', process.env.HOME || process.env.USERPROFILE || '');
       const exists = await fs.pathExists(fsPath);
 
       await configManager.init();
-      logger.success(exists ? `配置文件已重置：${fsPath}` : `配置文件已写入：${fsPath}`);
+      logger.success(exists ? `Config file reset: ${fsPath}` : `Config file created: ${fsPath}`);
       process.exit(0);
     } catch (error) {
-      logger.error('初始化配置失败', error as Error);
+      logger.error('Failed to initialize config', error as Error);
       process.exit(1);
     }
   });
@@ -76,7 +76,7 @@ program.action(async () => {
       } catch (e: any) {
         if (e instanceof AppError && e.code === ErrorCode.CONFIG_NOT_INITIALIZED) {
           process.stderr.write(
-            `配置文件未初始化，请先执行 "code-analyze init" 创建配置：~/.config/code-analyze/config.yaml\n`,
+            `Config is not initialized. Run "skill-any-code init" to create: ~/.config/skill-any-code/config.yaml\n`,
           );
           process.exit(1);
           return;
@@ -111,7 +111,7 @@ program.action(async () => {
           maxSizeMb: config.llm.cache_max_size_mb,
         });
         await cache.clear();
-        logger.info('LLM缓存已清空');
+        logger.info('LLM cache cleared');
       }
 
       // 默认并发：CPU*2，但不超过配置中的 analyze.max_concurrency
@@ -137,13 +137,13 @@ program.action(async () => {
       const { OpenAIClient } = await import('./infrastructure/llm/openai.client');
       const llmClient = new OpenAIClient(config.llm);
       logger.info(
-        `LLM 客户端初始化完成，开始测试连接与配置 (url=${config.llm.base_url}, model=${config.llm.model})`,
+        `LLM client initialized. Testing connectivity and config (url=${config.llm.base_url}, model=${config.llm.model})`,
       );
       try {
         await llmClient.testConnection(config.llm);
       } catch (e: any) {
         const detail = e?.message || String(e);
-        process.stderr.write(`LLM 连接/配置校验失败: ${detail}\n`);
+        process.stderr.write(`LLM connectivity/config validation failed: ${detail}\n`);
         process.exit(1);
       }
 
@@ -180,20 +180,20 @@ program.action(async () => {
         const dirs = (result as any).data?.analyzedDirsCount || 0;
         const objects = files + dirs;
         logger.success(
-          `解析完成！共处理 ${objects} 个对象`,
+          `Analysis completed. Processed ${objects} object(s)`,
         );
         const summaryPath = result.data?.summaryPath || '';
-        const summaryLabel = summaryPath ? `入口文件：${path.basename(summaryPath)}` : '入口文件：index.md';
-        logger.success(`项目分析结果${summaryLabel}`);
+        const summaryLabel = summaryPath ? `Entry file: ${path.basename(summaryPath)}` : 'Entry file: index.md';
+        logger.success(`Project analysis result. ${summaryLabel}`);
         const usage = result.data?.tokenUsage;
         if (usage) {
           logger.info(
-            `本次解析共调用 LLM ${usage.totalCalls} 次，输入 Token: ${usage.totalPromptTokens}，` +
-            `输出 Token: ${usage.totalCompletionTokens}，总 Token: ${usage.totalTokens}`
+            `LLM calls: ${usage.totalCalls}, prompt tokens: ${usage.totalPromptTokens}, ` +
+            `completion tokens: ${usage.totalCompletionTokens}, total tokens: ${usage.totalTokens}`
           );
         }
       } else {
-        logger.error(`解析失败：${result.message}`);
+        logger.error(`Analysis failed: ${result.message}`);
         if (result.errors && result.errors.length > 0) {
           result.errors.forEach(err => logger.error(`- ${err.path}: ${err.message}`));
         }
@@ -208,55 +208,77 @@ program.action(async () => {
           err.code === ErrorCode.LLM_TIMEOUT
         )) {
         const detail = err.message || '';
-        process.stderr.write(`LLM 连接/配置校验失败: ${detail}\n`);
+        process.stderr.write(`LLM connectivity/config validation failed: ${detail}\n`);
       } else if (err instanceof AppError) {
-        logger.error(`执行失败：${err.message}`, err);
+        logger.error(`Execution failed: ${err.message}`, err);
       } else {
-        logger.error('执行失败', err as Error);
+        logger.error('Execution failed', err as Error);
       }
       process.exit(1);
     }
   });
 
-// resolve 子命令（V2.3：根据绝对路径查询分析结果 Markdown 路径）
+// resolve 子命令（V2.6：根据相对路径推导分析结果 Markdown 路径，不依赖索引）
 program
   .command('resolve')
-  .description('查询文件/目录对应的分析结果 Markdown 路径')
-  .argument('<absolute-path>', '需要查询的文件/目录的绝对路径')
-  .option('-p, --project <path>', '项目根路径', process.cwd())
-  .option('--output-dir <path>', '结果输出目录')
-  .action(async (absolutePath: string, options: { project?: string; outputDir?: string }) => {
+  .description('Resolve the analysis result Markdown path for a file/directory')
+  .argument('<relative-path>', 'Relative path of the file/directory (from project root)')
+  .option('-p, --project <path>', 'Project root path', process.cwd())
+  .action(async (relativePath: string, options: { project?: string }) => {
     try {
-      let config;
-      try {
-        config = await configManager.load();
-      } catch (e: any) {
-        if (e instanceof AppError && e.code === ErrorCode.CONFIG_NOT_INITIALIZED) {
-          process.stderr.write(
-            `配置文件未初始化，请先执行 "code-analyze init" 创建配置：~/.config/code-analyze/config.yaml\n`,
-          );
-          process.exit(1);
-          return;
-        }
-        throw e;
-      }
       logger.setLevel(program.opts().logLevel as any);
       const projectRoot = options.project || process.cwd();
-      const outputDir = options.outputDir || config.global.output_dir;
-      const { getStoragePath } = await import('./common/utils');
-      const storageRoot = getStoragePath(projectRoot, outputDir);
-      const { IndexService } = await import('./infrastructure/index.service');
-      const indexService = new IndexService();
-      const result = await indexService.resolve(storageRoot, absolutePath);
-      if (result !== null) {
-        process.stdout.write(result + '\n');
+
+      const DEFAULT_OUTPUT_DIR = '.skill-any-code-result'
+
+      const normalizeRel = (input: string): { rel: string; rawHadTrailingSlash: boolean } => {
+        const raw = (input || '').trim()
+        const rawPosix = raw.replace(/\\/g, '/')
+        const rawHadTrailingSlash = rawPosix.endsWith('/') && rawPosix.length > 1
+        let rel = rawPosix
+        while (rel.startsWith('./')) rel = rel.slice(2)
+        if (rel.endsWith('/') && rel.length > 1) rel = rel.slice(0, -1)
+        if (rel === '') rel = '.'
+        return { rel, rawHadTrailingSlash }
+      }
+
+      const { rel, rawHadTrailingSlash } = normalizeRel(relativePath)
+      const targetAbs = path.resolve(projectRoot, rel)
+      if (!(await fs.pathExists(targetAbs))) {
+        process.stdout.write('N/A\n')
+        process.exit(0)
+        return
+      }
+
+      const stat = await fs.stat(targetAbs)
+      const isDir = stat.isDirectory() || rawHadTrailingSlash || rel === '.'
+
+      let mdRel: string
+      if (isDir) {
+        mdRel =
+          rel === '.'
+            ? path.posix.join(DEFAULT_OUTPUT_DIR, 'index.md')
+            : path.posix.join(DEFAULT_OUTPUT_DIR, rel, 'index.md')
       } else {
-        process.stdout.write('N/A\n');
+        const parsed = path.posix.parse(rel)
+        const dirPart = parsed.dir
+        const name =
+          parsed.name === 'index' && parsed.ext
+            ? `index${parsed.ext}.md`
+            : `${parsed.name}.md`
+        mdRel = dirPart ? path.posix.join(DEFAULT_OUTPUT_DIR, dirPart, name) : path.posix.join(DEFAULT_OUTPUT_DIR, name)
+      }
+
+      const mdAbs = path.resolve(projectRoot, mdRel)
+      if (await fs.pathExists(mdAbs)) {
+        process.stdout.write(mdRel + '\n')
+      } else {
+        process.stdout.write('N/A\n')
       }
       process.exit(0);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
-      process.stderr.write(`查询失败：${msg}\n`);
+      process.stderr.write(`Resolve failed: ${msg}\n`);
       process.exit(1);
     }
   });
@@ -270,6 +292,6 @@ program.configureHelp({
 
 // 解析命令行参数
 program.parseAsync(process.argv).catch((error) => {
-  console.error(pc.red(`\n执行失败：${error.message}`));
+  console.error(pc.red(`\nExecution failed: ${error.message}`));
   process.exit(1);
 });

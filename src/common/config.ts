@@ -18,7 +18,7 @@ const DEFAULT_BLACKLIST = [
   '*.png', '*.jpg', '*.jpeg', '*.gif',
   '*.bmp', '*.svg', '*.webp', '*.ico',
   'docs/', 'dist/', 'build/', 'coverage/',
-  'node_modules/', '.git/', '.code-analyze-result/',
+  'node_modules/', '.git/', '.skill-any-code-result/',
   '.agents/', '.claude/', '.gitignore'
 ];
 
@@ -57,7 +57,7 @@ const ConfigSchema = z.object({
     retry_delay: z.number().int().min(100).default(1000),
     context_window_size: z.number().int().min(1000).default(128000),
     cache_enabled: z.boolean().default(true),
-    cache_dir: z.string().default('~/.cache/code-analyze/llm'),
+    cache_dir: z.string().default('~/.cache/skill-any-code/llm'),
     // V2.5：新增缓存容量上限（MB），0 表示禁用磁盘缓存（需求文档 13.5.2）
     cache_max_size_mb: z.number().int().min(0).default(500),
   }).default({}),
@@ -71,7 +71,7 @@ class ConfigManager {
 
   private getDefaultConfigPath(): string {
     const home = process.env.HOME || process.env.USERPROFILE || '';
-    return path.join(home, '.config', 'code-analyze', 'config.yaml');
+    return path.join(home, '.config', 'skill-any-code', 'config.yaml');
   }
 
   private expandTilde(pathStr: string): string {
@@ -101,16 +101,10 @@ class ConfigManager {
       try {
         const fileContent = await fs.readFile(this.configPath, 'utf-8');
         const fileConfig = yaml.load(fileContent) as Record<string, unknown>;
-        if (fileConfig && 'query' in fileConfig) {
-          logger.warn('配置项 "query" 已在 V2.3 中废弃，请移除该配置段');
-        }
-        if (fileConfig?.analyze && typeof fileConfig.analyze === 'object' && 'exclude_patterns' in (fileConfig.analyze as object)) {
-          logger.warn('配置项 "analyze.exclude_patterns" 已在 V2.3 中废弃，请使用 "analyze.blacklist" 替代');
-        }
         config = ConfigSchema.parse(fileConfig);
-        logger.debug(`已加载配置文件：${this.configPath}`);
+        logger.debug(`Loaded config file: ${this.configPath}`);
       } catch (error) {
-        logger.warn(`配置文件解析失败，使用默认配置：${(error as Error).message}`);
+        logger.warn(`Failed to parse config file. Using defaults: ${(error as Error).message}`);
       }
     } else {
       // 配置文件不存在：不再隐式创建，由 CLI 的 init 子命令负责初始化
@@ -118,15 +112,15 @@ class ConfigManager {
       this.config = defaultConfig;
       throw new AppError(
         ErrorCode.CONFIG_NOT_INITIALIZED,
-        `配置文件未初始化：${this.configPath}`,
+        `Config is not initialized: ${this.configPath}`,
       );
     }
 
     // 3. 加载环境变量
     const envConfig: any = {};
     Object.entries(process.env).forEach(([key, value]) => {
-      if (!key.startsWith('CODE_ANALYZE_')) return;
-      const configKey = key.replace('CODE_ANALYZE_', '').toLowerCase();
+      if (!key.startsWith('SKILL_ANY_CODE_')) return;
+      const configKey = key.replace('SKILL_ANY_CODE_', '').toLowerCase();
       
       if (!envConfig.global) envConfig.global = {};
       if (configKey === 'log_level' && value) envConfig.global.log_level = value;
@@ -175,7 +169,7 @@ class ConfigManager {
 
   getConfig(): Config {
     if (!this.config) {
-      throw new Error('配置未加载，请先调用 load() 方法');
+      throw new Error('Config not loaded. Call load() first.');
     }
     return this.config;
   }
@@ -193,7 +187,7 @@ class ConfigManager {
     await fs.ensureDir(path.dirname(this.configPath));
     await fs.writeFile(this.configPath, yaml.dump(defaultConfig), 'utf-8');
     this.config = defaultConfig;
-    logger.debug(`配置文件已初始化：${this.configPath}`);
+    logger.debug(`Initialized config file: ${this.configPath}`);
   }
 
   async save(config: Partial<Config>): Promise<void> {

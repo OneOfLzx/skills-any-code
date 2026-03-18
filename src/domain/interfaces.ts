@@ -1,11 +1,11 @@
 import type {
   AnalysisResult,
+  AnalysisParams,
   FullAnalysisParams,
   IncrementalAnalysisParams,
   ResumeAnalysisParams,
   FileAnalysis,
   DirectoryAnalysis,
-  AnalysisMetadata,
   AnalysisCheckpoint,
   ModificationLog,
   LLMConfig,
@@ -13,7 +13,6 @@ import type {
   LLMResponse,
   FileChunk,
   FileChunkAnalysis,
-  AnalysisIndex,
   TokenUsageStats,
 } from '../common/types'
 
@@ -21,23 +20,6 @@ import type {
 export interface IBlacklistService {
   load(globalBlacklist: string[], projectRoot: string): Promise<void>
   isIgnored(relativePath: string): boolean
-}
-
-// ===== V2.3 索引服务接口 =====
-export interface IIndexService {
-  buildIndex(
-    projectRoot: string,
-    storageRoot: string,
-    fileEntries: Array<{ sourcePath: string; resultPath: string }>,
-    dirEntries: Array<{ sourcePath: string; resultPath: string }>
-  ): Promise<void>
-  updateIndex(
-    storageRoot: string,
-    updatedEntries: Array<{ sourcePath: string; resultPath: string; type: 'file' | 'directory' }>,
-    removedPaths: string[]
-  ): Promise<void>
-  readIndex(storageRoot: string): Promise<AnalysisIndex | null>
-  resolve(storageRoot: string, absolutePath: string): Promise<string | null>
 }
 
 /** AI 工具 Provider 标识 */
@@ -57,7 +39,11 @@ export interface ISkillGenerator {
 
 // 解析服务接口
 export interface IAnalysisService {
+  /** 统一解析入口：全量与增量共享管线，仅通过 fileFilter 区分 */
+  analyze(params: AnalysisParams): Promise<AnalysisResult>
+  /** @deprecated 向后兼容，内部转为 analyze 调用 */
   fullAnalysis(params: FullAnalysisParams): Promise<AnalysisResult>
+  /** @deprecated 向后兼容，内部转为 analyze 调用 */
   incrementalAnalysis(params: IncrementalAnalysisParams): Promise<AnalysisResult>
   resumeAnalysis(params: ResumeAnalysisParams): Promise<AnalysisResult>
 }
@@ -78,10 +64,8 @@ export interface IIncrementalService {
 export interface IStorageService {
   saveFileAnalysis(projectSlug: string, filePath: string, data: FileAnalysis): Promise<void>
   saveDirectoryAnalysis(projectSlug: string, dirPath: string, data: DirectoryAnalysis): Promise<void>
-  saveMetadata(projectSlug: string, metadata: AnalysisMetadata): Promise<void>
   getFileAnalysis(projectSlug: string, filePath: string, type: 'summary' | 'full' | 'diagram'): Promise<FileAnalysis | null>
   getDirectoryAnalysis(projectSlug: string, dirPath: string, type: 'summary' | 'full' | 'diagram'): Promise<DirectoryAnalysis | null>
-  getMetadata(projectSlug: string): Promise<AnalysisMetadata | null>
   getCheckpoint(projectSlug: string): Promise<AnalysisCheckpoint | null>
   saveCheckpoint(projectSlug: string, checkpoint: AnalysisCheckpoint): Promise<void>
   getStoragePath(projectSlug: string): string

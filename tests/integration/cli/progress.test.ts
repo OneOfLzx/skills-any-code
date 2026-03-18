@@ -46,9 +46,9 @@ describe('12.3.1 进度条与对象级进度 (UT-TERM-001 / ST-V22-PROG-001)', (
   });
 
   beforeEach(async () => {
-    testDir = mkdtemp('code-analyze-progress');
+    testDir = mkdtemp('skill-any-code-progress');
     mock = await startMockOpenAIServer();
-    tempHome = mkdtemp('ca-progress-home');
+    tempHome = mkdtemp('sac-progress-home');
     await fs.ensureDir(tempHome);
     await createTestConfigInDir(tempHome, {
       llmBaseUrl: mock.baseUrl,

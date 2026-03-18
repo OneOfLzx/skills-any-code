@@ -206,6 +206,25 @@ export interface ResumeAnalysisParams {
   checkpoint: AnalysisCheckpoint
 }
 
+/**
+ * 统一解析参数：全量与增量共享同一条管线，仅通过 fileFilter 区分过滤策略。
+ */
+export interface AnalysisParams {
+  projectRoot: string
+  depth?: number
+  concurrency: number
+  mode: 'full' | 'incremental'
+  commitHash: string
+  /** 文件过滤器：返回 true 表示该文件需要（重新）解析 */
+  fileFilter: (relPath: string, absPath: string) => Promise<boolean>
+  /** 过滤完成后通知总对象数（用于 CLI 启动进度条） */
+  onTotalKnown?: (total: number) => void
+  onObjectPlanned?: (obj: AnalysisObject) => void
+  onObjectStarted?: (obj: AnalysisObject) => void
+  onObjectCompleted?: (obj: AnalysisObject, meta: ObjectResultMeta) => void
+  onScanProgress?: (scannedFiles: number) => void
+}
+
 // 分析结果
 export interface AnalysisResult {
   success: boolean

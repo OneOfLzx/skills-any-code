@@ -8,13 +8,13 @@ describe('E2E Env Helpers (文档第11章规范)', () => {
   const apiKeyFile = path.join(privDataDir, 'api_key.txt');
 
   afterEach(async () => {
-    delete process.env.CODE_ANALYZE_E2E_LLM_MODE;
+    delete process.env.SKILL_ANY_CODE_E2E_LLM_MODE;
     await fs.remove(privDataDir);
   });
 
   describe('getE2ELLMMood', () => {
     test('默认使用 mock 模式', () => {
-      delete process.env.CODE_ANALYZE_E2E_LLM_MODE;
+      delete process.env.SKILL_ANY_CODE_E2E_LLM_MODE;
 
       const result = getE2ELLMMood();
       expect(result.mode).toBe('mock');
@@ -22,7 +22,7 @@ describe('E2E Env Helpers (文档第11章规范)', () => {
     });
 
     test('显式设置为 real 时不使用 mock', () => {
-      process.env.CODE_ANALYZE_E2E_LLM_MODE = 'real';
+      process.env.SKILL_ANY_CODE_E2E_LLM_MODE = 'real';
 
       const result = getE2ELLMMood();
       expect(result.mode).toBe('real');
@@ -30,7 +30,7 @@ describe('E2E Env Helpers (文档第11章规范)', () => {
     });
 
     test('非法取值时回退到 mock', () => {
-      process.env.CODE_ANALYZE_E2E_LLM_MODE = 'unknown';
+      process.env.SKILL_ANY_CODE_E2E_LLM_MODE = 'unknown';
 
       const result = getE2ELLMMood();
       expect(result.mode).toBe('mock');

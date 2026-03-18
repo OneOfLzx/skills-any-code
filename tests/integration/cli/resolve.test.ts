@@ -1,5 +1,5 @@
 /**
- * V2.3 CLI resolve 子命令集成测试：完整流程 解析 → 索引 → resolve 查询
+ * V2.6 CLI resolve 子命令集成测试：完整流程 解析 → resolve 查询（不依赖索引）
  * 对应测试文档 10.4.2、10.4.7 ST-V23-FLOW-001
  */
 import { exec } from 'child_process';
@@ -24,8 +24,8 @@ describe('CLI resolve 集成测试 (V23)', () => {
   });
 
   beforeEach(async () => {
-    testDir = mkdtemp('code-analyze-resolve-int');
-    tempHome = mkdtemp('code-analyze-resolve-config');
+    testDir = mkdtemp('skill-any-code-resolve-int');
+    tempHome = mkdtemp('skill-any-code-resolve-config');
     mock = await startMockOpenAIServer();
     await createTestConfigInDir(tempHome, {
       llmBaseUrl: mock.baseUrl,
@@ -44,49 +44,45 @@ describe('CLI resolve 集成测试 (V23)', () => {
     await fs.remove(tempHome).catch(() => {});
   });
 
-  const configPath = () => path.join(tempHome, '.config', 'code-analyze', 'config.yaml');
+  const configPath = () => path.join(tempHome, '.config', 'skill-any-code', 'config.yaml');
   const execEnv = () => ({ HOME: tempHome, USERPROFILE: tempHome });
 
-  it('UT-V23-RESOLVE-001: 解析后 resolve 应返回对应 Markdown 路径', async () => {
+  it('UT-V26-RESOLVE-001: 解析后 resolve 应返回对应 Markdown 相对路径', async () => {
     await execAsync(
       `node dist/cli.js --path "${testDir}" --mode full --no-skills --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0`,
       { cwd: repoRoot, env: { ...process.env, ...execEnv() } }
     );
 
-    const indexPath = path.join(testDir, '.code-analyze-result', 'analysis-index.json');
-    expect(await fs.pathExists(indexPath)).toBe(true);
-
-    const absPath = path.resolve(testDir, 'src/index.ts').replace(/\\/g, '/');
+    const relPath = 'src/index.ts';
     const { stdout, stderr } = await execAsync(
-      `node dist/cli.js resolve "${absPath}" --project "${testDir}"`,
+      `node dist/cli.js resolve "${relPath}" --project "${testDir}"`,
       { cwd: repoRoot, env: { ...process.env, ...execEnv() } }
     );
 
     expect(stderr).toBe('');
     const result = stdout.trim();
     expect(result).not.toBe('N/A');
-    expect(result).toMatch(/\.md$/);
-    expect(await fs.pathExists(result.replace(/\//g, path.sep))).toBe(true);
+    // 特殊规则：index.xxx 文件结果为 index.xxx.md（避免与目录级 index.md 冲突）
+    expect(result).toBe('.skill-any-code-result/src/index.ts.md');
+    expect(await fs.pathExists(path.join(testDir, result.replace(/\//g, path.sep)))).toBe(true);
   }, 60000);
 
-  it('UT-V23-RESOLVE-003: 不存在的路径应输出 N/A', async () => {
+  it('UT-V26-RESOLVE-003: 不存在的路径应输出 N/A', async () => {
     await execAsync(
       `node dist/cli.js --path "${testDir}" --mode full --no-skills --llm-base-url ${mock.baseUrl} --llm-api-key test --llm-max-retries 0`,
       { cwd: repoRoot, env: { ...process.env, ...execEnv() } }
     );
 
-    const absPath = path.resolve(testDir, 'src/nonexistent.ts').replace(/\\/g, '/');
     const { stdout } = await execAsync(
-      `node dist/cli.js resolve "${absPath}" --project "${testDir}"`,
+      `node dist/cli.js resolve "src/nonexistent.ts" --project "${testDir}"`,
       { cwd: repoRoot, env: { ...process.env, ...execEnv() } }
     );
     expect(stdout.trim()).toBe('N/A');
   }, 60000);
 
-  it('UT-V23-RESOLVE-004: 索引不存在时 resolve 返回 N/A（当前实现为 exit 0 + N/A）', async () => {
-    const absPath = path.resolve(testDir, 'src/index.ts').replace(/\\/g, '/');
+  it('UT-V26-RESOLVE-004: 未生成结果 md 时 resolve 返回 N/A（exit 0 + N/A）', async () => {
     const { stdout } = await execAsync(
-      `node dist/cli.js resolve "${absPath}" --project "${testDir}"`,
+      `node dist/cli.js resolve "src/index.ts" --project "${testDir}"`,
       { cwd: repoRoot, env: { ...process.env, ...execEnv() } }
     );
     expect(stdout.trim()).toBe('N/A');

@@ -30,9 +30,9 @@ describe('12.3.2 文件级与目录级结果完整性 (ST-RESULT-FILE-001 / ST-R
   });
 
   beforeEach(async () => {
-    testDir = mkdtemp('code-analyze-result-integrity');
+    testDir = mkdtemp('skill-any-code-result-integrity');
     mock = await startMockOpenAIServer();
-    tempHome = mkdtemp('ca-result-integrity-home');
+    tempHome = mkdtemp('sac-result-integrity-home');
     await fs.ensureDir(tempHome);
     await createTestConfigInDir(tempHome, { llmBaseUrl: mock.baseUrl, llmApiKey: 'test', llmModel: 'mock' });
     process.env.HOME = tempHome;
@@ -73,7 +73,7 @@ describe('12.3.2 文件级与目录级结果完整性 (ST-RESULT-FILE-001 / ST-R
       stderr = e.stderr ?? '';
     }
 
-    const resultRoot = path.join(testDir, '.code-analyze-result');
+    const resultRoot = path.join(testDir, '.skill-any-code-result');
     expect(await fs.pathExists(resultRoot)).toBe(true);
 
     const helloMd = path.join(resultRoot, 'src/main/java/pkg/Hello.md');
@@ -113,7 +113,7 @@ describe('12.3.2 文件级与目录级结果完整性 (ST-RESULT-FILE-001 / ST-R
       { cwd: repoRoot, env: { ...process.env, HOME: tempHome, USERPROFILE: tempHome } }
     );
 
-    const resultRoot = path.join(testDir, '.code-analyze-result');
+    const resultRoot = path.join(testDir, '.skill-any-code-result');
     const pkgIndexPath = path.join(resultRoot, 'src/main/java/pkg/index.md');
     expect(await fs.pathExists(pkgIndexPath)).toBe(true);
 

@@ -32,10 +32,7 @@ export async function listAllFilesRecursively(rootDir: string): Promise<string[]
 /**
  * 结果目录白名单契约断言：
  * - 普通文件后缀必须为 .md
- * - 允许少量集中 JSON：
- *   - .analysis_metadata.json
- *   - analysis-index.json
- * - 其它 JSON（例如 per-file/per-dir 的 <file>.json / index.json）一律视为违规。
+ * - 不允许任何 JSON（V2.6 起不再生成 .analysis_metadata.json / analysis-index.json）
  *
  * 若存在违规文件，将抛出错误并输出前若干个违规路径，驱动后续实现修复。
  */
@@ -46,13 +43,7 @@ export function assertOnlyAllowedResultFiles(files: string[]): void {
     const base = rel.split('/').pop() || rel;
 
     if (base.endsWith('.json')) {
-      const isAllowedJson =
-        base === '.analysis_metadata.json' ||
-        base === 'analysis-index.json';
-
-      if (!isAllowedJson) {
-        violations.push(rel);
-      }
+      violations.push(rel);
       continue;
     }
 

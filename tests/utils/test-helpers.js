@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.invokeCommand = invokeCommand;
 exports.invokeSkill = invokeSkill;
 const schema_1 = require("../../src/commands/analyze-project/schema");
-const skill_1 = require("../../src/skills/project-code-query/skill");
+const skill_1 = require("../../src/skills/project-skill-any-code/skill");
 const ProjectCodeQuerySkillSchema = skill_1.ProjectCodeQuerySkill.schema;
 /**
  * 调用命令接口（Mock实现，用于单元测试）
@@ -51,7 +51,7 @@ async function invokeCommand(command, params) {
  * 调用Skill接口（Mock实现，用于单元测试）
  */
 async function invokeSkill(skillName, params) {
-    if (skillName === 'project-code-query') {
+    if (skillName === 'project-skill-any-code') {
         // 参数校验
         const validation = ProjectCodeQuerySkillSchema.safeParse(params);
         if (!validation.success) {

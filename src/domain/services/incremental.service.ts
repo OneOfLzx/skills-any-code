@@ -1,5 +1,4 @@
 import { IIncrementalService, IGitService, IStorageService } from '../interfaces'
-import { AnalysisMetadata } from '../../common/types'
 
 export class IncrementalService implements IIncrementalService {
   constructor(
@@ -9,31 +8,11 @@ export class IncrementalService implements IIncrementalService {
 
   async canDoIncremental(projectRoot: string): Promise<{ available: boolean; baseCommit?: string; reason?: string }> {
     const isGit = await this.gitService.isGitProject(projectRoot)
-    if (!isGit) {
-      return { available: false, reason: 'Not a git project' }
-    }
+    if (!isGit) return { available: false, reason: 'Not a git project' }
 
-    const projectSlug = await this.gitService.getProjectSlug(projectRoot)
-    const metadata = await this.storageService.getMetadata(projectSlug)
-    if (!metadata) {
-      return { available: false, reason: 'No historical analysis records' }
-    }
-
-    const currentCommit = await this.gitService.getCurrentCommit(projectRoot)
-    
-    const matchedCommit = metadata.gitCommits.find(c => c.hash === currentCommit)
-    if (matchedCommit) {
-      return { available: true, baseCommit: currentCommit }
-    }
-
-    const historicalCommits = metadata.gitCommits.map(c => c.hash)
-    const commonAncestor = await this.findNearestCommonAncestor(projectRoot, [currentCommit, ...historicalCommits])
-    
-    if (commonAncestor) {
-      return { available: true, baseCommit: commonAncestor }
-    }
-
-    return { available: false, reason: 'No related historical commits found' }
+    // V2.6：不再生成/读取 .analysis_metadata.json，因此无法基于历史记录计算可用的 baseCommit。
+    // 主流程会回退到逐文件 commitId/hash 判定，无需依赖此服务。
+    return { available: false, reason: 'Metadata disabled (V2.6): fallback to per-file incremental detection' }
   }
 
   async getChangedFiles(projectRoot: string, baseCommit: string, targetCommit: string): Promise<string[]> {

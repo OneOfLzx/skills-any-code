@@ -37,9 +37,9 @@ beforeAll(async () => {
       llmConfig[key] = value;
     });
     
-    if (llmConfig.baseURL) process.env.CODE_ANALYZE_LLM_BASEURL = llmConfig.baseURL;
-    if (llmConfig.apiKey) process.env.CODE_ANALYZE_LLM_APIKEY = llmConfig.apiKey;
-    if (llmConfig.model) process.env.CODE_ANALYZE_LLM_MODEL = llmConfig.model;
+    if (llmConfig.baseURL) process.env.SKILL_ANY_CODE_LLM_BASE_URL = llmConfig.baseURL;
+    if (llmConfig.apiKey) process.env.SKILL_ANY_CODE_LLM_API_KEY = llmConfig.apiKey;
+    if (llmConfig.model) process.env.SKILL_ANY_CODE_LLM_MODEL = llmConfig.model;
    } catch (error) {
      console.warn('Failed to load LLM config from priv_data, tests may fail:', error);
    }
@@ -123,7 +123,7 @@ export async function invokeSkill(
   skillName: string,
   params: ProjectCodeQuerySkillParams
 ): Promise<ProjectCodeQuerySkillResult> {
-  if (skillName === 'project-code-query') {
+  if (skillName === 'project-skill-any-code') {
     // 参数校验
     const validation = ProjectCodeQuerySkillSchema.safeParse(params);
     if (!validation.success) {

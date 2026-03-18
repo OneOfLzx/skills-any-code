@@ -41,7 +41,7 @@ export async function readAnalyzedFileRecord(
   projectPath: string,
   relFilePath: string,
 ): Promise<AnalyzedFileRecord> {
-  const mdPath = resolveAnalyzedMarkdownPath(projectPath, '.code-analyze-result', relFilePath);
+  const mdPath = resolveAnalyzedMarkdownPath(projectPath, '.skill-any-code-result', relFilePath);
   if (!(await fs.pathExists(mdPath))) {
     throw new Error(`Analyzed record Markdown not found for ${relFilePath}. Tried: ${mdPath}`);
   }

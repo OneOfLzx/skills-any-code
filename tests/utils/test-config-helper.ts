@@ -23,7 +23,7 @@ const DEFAULT_CONFIG_YAML = `global:
   log_level: info
   output_format: text
   auto_confirm: false
-  output_dir: ./.code-analyze-result
+  output_dir: ./.skill-any-code-result
 analyze:
   default_mode: auto
   default_concurrency: 4
@@ -36,7 +36,7 @@ analyze:
     - "credentials.*"
     - "node_modules/"
     - ".git/"
-    - ".code-analyze-result/"
+    - ".skill-any-code-result/"
 skills:
   default_providers:
     - opencode
@@ -53,7 +53,7 @@ llm:
   retry_delay: 1000
   context_window_size: 128000
   cache_enabled: true
-  cache_dir: "~/.cache/code-analyze/llm"
+  cache_dir: "~/.cache/skill-any-code/llm"
   cache_max_size_mb: 500
 `;
 
@@ -64,7 +64,7 @@ llm:
 export async function createTestConfig(
   options: TestConfigOptions = {}
 ): Promise<{ configPath: string; tempDir: string }> {
-  const tempDir = path.join(os.tmpdir(), `ca-test-config-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+  const tempDir = path.join(os.tmpdir(), `sac-test-config-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
   await fs.ensureDir(tempDir);
   const configPath = path.join(tempDir, 'config.yaml');
 
@@ -96,7 +96,7 @@ export async function createTestConfigInDir(
   dir: string,
   options: TestConfigOptions = {}
 ): Promise<string> {
-  const configDir = path.join(dir, '.config', 'code-analyze');
+  const configDir = path.join(dir, '.config', 'skill-any-code');
   await fs.ensureDir(configDir);
   const configPath = path.join(configDir, 'config.yaml');
 

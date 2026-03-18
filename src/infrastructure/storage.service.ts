@@ -2,7 +2,7 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import { createHash } from 'crypto'
 import { IStorageService } from '../domain/interfaces'
-import { FileAnalysis, DirectoryAnalysis, AnalysisMetadata, AnalysisCheckpoint } from '../common/types'
+import { FileAnalysis, DirectoryAnalysis, AnalysisCheckpoint } from '../common/types'
 import { AppError, ErrorCode } from '../common/errors'
 import { getStoragePath, getFileOutputPath, getDirOutputPath } from '../common/utils'
 
@@ -31,8 +31,16 @@ export class LocalStorageService implements IStorageService {
     return (m?.[1] ?? '').trim()
   }
 
+  private extractSectionAny(markdown: string, titles: string[]): string {
+    for (const t of titles) {
+      const v = this.extractSection(markdown, t)
+      if (v) return v
+    }
+    return ''
+  }
+
   private parseBasicInfo(markdown: string): Record<string, string> {
-    const basic = this.extractSection(markdown, '基本信息')
+    const basic = this.extractSectionAny(markdown, ['Basic Information', '基本信息'])
     const lines = basic.split('\n').map(l => l.trim()).filter(Boolean)
     const map: Record<string, string> = {}
     for (const line of lines) {
@@ -46,20 +54,28 @@ export class LocalStorageService implements IStorageService {
     return map
   }
 
+  private getBasicValue(basic: Record<string, string>, keys: string[]): string | undefined {
+    for (const k of keys) {
+      const v = basic[k]
+      if (v !== undefined) return v
+    }
+    return undefined
+  }
+
   private parseFileMarkdownToAnalysis(markdown: string, filePath: string): FileAnalysis | null {
     const md = this.normalizeNewlines(markdown)
     const firstLine = md.split('\n')[0]?.trim() ?? ''
     const name = firstLine.startsWith('# ') ? firstLine.slice(2).trim() : path.basename(filePath)
     const basic = this.parseBasicInfo(md)
-    const summary = this.extractSection(md, '概述')
-    const description = this.extractSection(md, '功能描述')
+    const summary = this.extractSectionAny(md, ['Summary', '概述'])
+    const description = this.extractSectionAny(md, ['Description', '功能描述'])
 
-    const language = basic['语言'] ?? 'unknown'
-    const loc = Number(basic['代码行数'] ?? NaN)
-    const lastAnalyzedAt = basic['最后解析时间'] ?? new Date(0).toISOString()
-    const fileGitCommitId = basic['file_git_commit_id']
-    const isDirtyWhenAnalyzedRaw = basic['is_dirty_when_analyzed']
-    const fileHashWhenAnalyzed = basic['file_hash_when_analyzed']
+    const language = this.getBasicValue(basic, ['Language', '语言']) ?? 'unknown'
+    const loc = Number(this.getBasicValue(basic, ['Lines of Code', '代码行数']) ?? NaN)
+    const lastAnalyzedAt = this.getBasicValue(basic, ['Last Analyzed At', '最后解析时间']) ?? new Date(0).toISOString()
+    const fileGitCommitId = this.getBasicValue(basic, ['file_git_commit_id'])
+    const isDirtyWhenAnalyzedRaw = this.getBasicValue(basic, ['is_dirty_when_analyzed'])
+    const fileHashWhenAnalyzed = this.getBasicValue(basic, ['file_hash_when_analyzed'])
 
     const isDirtyWhenAnalyzed =
       isDirtyWhenAnalyzedRaw === undefined
@@ -89,11 +105,11 @@ export class LocalStorageService implements IStorageService {
     const md = this.normalizeNewlines(markdown)
     const firstLine = md.split('\n')[0]?.trim() ?? ''
     const rawName = firstLine.startsWith('# ') ? firstLine.slice(2).trim() : path.basename(dirPath)
-    const name = rawName.replace(/\s*目录\s*$/, '').trim() || path.basename(dirPath)
-    const summary = this.extractSection(md, '概述')
-    const description = this.extractSection(md, '功能描述') || summary
+    const name = rawName.replace(/\s*(Directory|目录)\s*$/, '').trim() || path.basename(dirPath)
+    const summary = this.extractSectionAny(md, ['Summary', '概述'])
+    const description = this.extractSectionAny(md, ['Description', '功能描述']) || summary
     const basic = this.parseBasicInfo(md)
-    const lastAnalyzedAt = basic['最后解析时间'] ?? new Date(0).toISOString()
+    const lastAnalyzedAt = this.getBasicValue(basic, ['Last Analyzed At', '最后解析时间']) ?? new Date(0).toISOString()
     return {
       type: 'directory',
       path: dirPath,
@@ -117,7 +133,7 @@ export class LocalStorageService implements IStorageService {
   ): Promise<void> {
     const raw = await fs.readFile(outputPath, 'utf-8')
     const md = this.normalizeNewlines(raw)
-    const basic = this.extractSection(md, '基本信息')
+    const basic = this.extractSectionAny(md, ['Basic Information', '基本信息'])
     if (!basic) {
       // 如果没有“基本信息”段，直接回退为重写全文件（风险较大）；这里选择保守：不改动
       return
@@ -126,7 +142,7 @@ export class LocalStorageService implements IStorageService {
     const lines = basic.split('\n')
     const patchKV = (key: string, value: string) => {
       const re = new RegExp(`^\\s*-\\s*${key}\\s*[：:].*$`, 'm')
-      const replacement = `- ${key}：${value}`
+      const replacement = `- ${key}: ${value}`
       const joined = lines.join('\n')
       if (re.test(joined)) {
         const next = joined.replace(re, replacement)
@@ -136,14 +152,18 @@ export class LocalStorageService implements IStorageService {
       }
     }
 
-    if (updates.lastAnalyzedAt) patchKV('最后解析时间', updates.lastAnalyzedAt)
+    if (updates.lastAnalyzedAt) {
+      patchKV('Last Analyzed At', updates.lastAnalyzedAt)
+      patchKV('最后解析时间', updates.lastAnalyzedAt) // backward-compat for old markdown
+    }
     if (updates.fileGitCommitId !== undefined) patchKV('file_git_commit_id', updates.fileGitCommitId || 'N/A')
     if (updates.isDirtyWhenAnalyzed !== undefined) patchKV('is_dirty_when_analyzed', String(!!updates.isDirtyWhenAnalyzed))
     if (updates.fileHashWhenAnalyzed !== undefined) patchKV('file_hash_when_analyzed', updates.fileHashWhenAnalyzed || '')
 
     const newBasic = lines.join('\n').trim() + '\n'
-    const escaped = '基本信息'.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const reSection = new RegExp(`(\\n##\\s+${escaped}\\n)([\\s\\S]*?)(?=\\n##\\s+|\\n#\\s+|$)`, 'm')
+    const escapedEn = 'Basic Information'.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const escapedZh = '基本信息'.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const reSection = new RegExp(`(\\n##\\s+(?:${escapedEn}|${escapedZh})\\n)([\\s\\S]*?)(?=\\n##\\s+|\\n#\\s+|$)`, 'm')
     const nextMd = md.replace(reSection, `$1${newBasic}`)
     await fs.writeFile(outputPath, nextMd, 'utf-8')
   }
@@ -176,40 +196,38 @@ export class LocalStorageService implements IStorageService {
       let content = `# ${data.name}\n\n`
 
       // 基本信息段（设计文档第 13.2.4）
-      content += '## 基本信息\n'
-      content += `- 路径：${relativePath}\n`
-      content += `- 语言：${data.language}\n`
-      content += `- 代码行数：${data.linesOfCode}\n`
-      content += `- 最后解析时间：${data.lastAnalyzedAt}\n`
-      content += `- file_git_commit_id：${fileGitCommitId}\n`
-      content += `- is_dirty_when_analyzed：${isDirty}\n`
-      content += `- file_hash_when_analyzed：${fileHash}\n\n`
+      content += '## Basic Information\n'
+      content += `- Path: ${relativePath}\n`
+      content += `- Language: ${data.language}\n`
+      content += `- Lines of Code: ${data.linesOfCode}\n`
+      content += `- Last Analyzed At: ${data.lastAnalyzedAt}\n`
+      content += `- file_git_commit_id: ${fileGitCommitId}\n`
+      content += `- is_dirty_when_analyzed: ${isDirty}\n`
+      content += `- file_hash_when_analyzed: ${fileHash}\n\n`
 
       // 概述与功能描述
       const summary = data.summary || ''
       const description = data.description || ''
-      content += `## 概述\n${summary}\n\n`
-      content += `## 功能描述\n${description || summary}\n\n`
+      content += `## Summary\n${summary}\n\n`
+      content += `## Description\n${description || summary}\n\n`
 
       // 类定义
       if (data.classes.length > 0) {
-        content += '## 类定义\n'
+        content += '## Classes\n'
         for (const cls of data.classes) {
           content += `### ${cls.name}\n`
-          if (cls.extends) content += `- 继承：${cls.extends}\n`
-          if (cls.implements && cls.implements.length > 0) {
-            content += `- 实现：${cls.implements.join(', ')}\n`
-          }
+          if (cls.extends) content += `- Extends: ${cls.extends}\n`
+          if (cls.implements && cls.implements.length > 0) content += `- Implements: ${cls.implements.join(', ')}\n`
 
           if (cls.properties.length > 0) {
-            content += `- 字段：\n`
+            content += `- Properties:\n`
             for (const prop of cls.properties) {
               content += `  - ${prop.visibility} ${prop.name}: ${prop.type} - ${prop.description}\n`
             }
           }
 
           if (cls.methods.length > 0) {
-            content += `- 方法：\n`
+            content += `- Methods:\n`
             for (const method of cls.methods) {
               content += `  - ${method.visibility} ${method.signature} - ${method.description}\n`
             }
@@ -221,7 +239,7 @@ export class LocalStorageService implements IStorageService {
 
       // 全局函数
       if (data.functions.length > 0) {
-        content += '## 全局函数\n'
+        content += '## Global Functions\n'
         for (const func of data.functions) {
           content += `- ${func.signature} - ${func.description}\n`
         }
@@ -230,7 +248,7 @@ export class LocalStorageService implements IStorageService {
 
       await fs.writeFile(outputPath, content, 'utf-8')
     } catch (e) {
-      throw new AppError(ErrorCode.STORAGE_WRITE_FAILED, '保存文件分析结果失败', e)
+      throw new AppError(ErrorCode.STORAGE_WRITE_FAILED, 'Failed to save file analysis result', e)
     }
   }
 
@@ -244,40 +262,39 @@ export class LocalStorageService implements IStorageService {
       const childrenDirs = data.structure.filter(item => item.type === 'directory')
       const childrenFiles = data.structure.filter(item => item.type === 'file')
 
-      let content = `# ${data.name} 目录\n\n`
+      let content = `# ${data.name} Directory\n\n`
 
       // 基本信息
-      content += '## 基本信息\n'
-      content += `- 路径：${relativePath}\n`
-      content += `- 子目录数量：${childrenDirs.length}\n`
-      content += `- 文件数量：${childrenFiles.length}\n`
-      content += `- 最后解析时间：${data.lastAnalyzedAt}\n\n`
+      content += '## Basic Information\n'
+      content += `- Path: ${relativePath}\n`
+      content += `- Child Directories: ${childrenDirs.length}\n`
+      content += `- Child Files: ${childrenFiles.length}\n`
+      content += `- Last Analyzed At: ${data.lastAnalyzedAt}\n\n`
 
       let description = (data as any).description ?? data.summary
       const summary = data.summary
 
-      // 若 LLM 给出的描述信息量不足，则由程序侧补充一段具备业务语义的中文描述（设计文档 §13.3）
-      const chineseLength = (description.match(/[\u4e00-\u9fa5]/g) || []).length
-      const looksLikeStatOnly = /包含\s*\d+\s*个文件/.test(description) && /个子目录/.test(description)
-      if (!description || chineseLength < 20 || looksLikeStatOnly) {
-        const fileNames = childrenFiles.map(f => f.name).join('、')
-        const dirNames = childrenDirs.map(d => d.name).join('、')
+      // If LLM description is too short or purely statistical, add a deterministic English fallback.
+      const asciiWordCount = (description || '').trim().split(/\s+/).filter(Boolean).length
+      const looksLikeStatOnly = /\b\d+\b/.test(description || '') && /(files?|directories?)/i.test(description || '')
+      if (!description || asciiWordCount < 12 || looksLikeStatOnly) {
+        const fileNames = childrenFiles.map(f => f.name).join(', ')
+        const dirNames = childrenDirs.map(d => d.name).join(', ')
         const extraKeywords = relativePath.includes('SenseVoice')
-          ? '，用于演示 SenseVoice 模型的推理示例与语音处理流程（example/demo）'
+          ? ' It also appears to contain SenseVoice examples/demos.'
           : ''
         description =
-          `该目录「${data.name}」位于「${relativePath || '.'}」，` +
-          `包含 ${childrenFiles.length} 个文件和 ${childrenDirs.length} 个子目录` +
-          (fileNames ? `，例如：${fileNames}` : '') +
-          (dirNames ? `，以及子目录：${dirNames}` : '') +
-          `，用于组织与当前模块相关的源码与示例${extraKeywords}。`
+          `The "${data.name}" directory at "${relativePath || '.'}" contains ${childrenFiles.length} file(s) and ${childrenDirs.length} subdirectory(ies)` +
+          (fileNames ? ` (e.g., ${fileNames})` : '') +
+          (dirNames ? ` and subdirectories such as: ${dirNames}` : '') +
+          `. It organizes source code and related artifacts for this area of the project.${extraKeywords}`
       }
 
-      content += `## 功能描述\n${description}\n\n`
-      content += `## 概述\n${summary}\n\n`
+      content += `## Description\n${description}\n\n`
+      content += `## Summary\n${summary}\n\n`
 
       if (childrenDirs.length > 0) {
-        content += '## 子目录\n'
+        content += '## Subdirectories\n'
         for (const item of childrenDirs) {
           content += `- ${item.name}: ${item.description}\n`
         }
@@ -285,7 +302,7 @@ export class LocalStorageService implements IStorageService {
       }
 
       if (childrenFiles.length > 0) {
-        content += '## 文件\n'
+        content += '## Files\n'
         for (const item of childrenFiles) {
           content += `- ${item.name}: ${item.description}\n`
         }
@@ -294,18 +311,7 @@ export class LocalStorageService implements IStorageService {
 
       await fs.writeFile(outputPath, content, 'utf-8')
     } catch (e) {
-      throw new AppError(ErrorCode.STORAGE_WRITE_FAILED, '保存目录分析结果失败', e)
-    }
-  }
-
-  async saveMetadata(projectSlug: string, metadata: AnalysisMetadata): Promise<void> {
-    try {
-      const storageRoot = this.getStorageRoot()
-      const outputPath = path.join(storageRoot, '.analysis_metadata.json')
-      await fs.ensureDir(storageRoot)
-      await fs.writeJson(outputPath, metadata, { spaces: 2 })
-    } catch (e) {
-      throw new AppError(ErrorCode.STORAGE_WRITE_FAILED, '保存元数据失败', e)
+      throw new AppError(ErrorCode.STORAGE_WRITE_FAILED, 'Failed to save directory analysis result', e)
     }
   }
 
@@ -354,35 +360,16 @@ export class LocalStorageService implements IStorageService {
     await this.updateFileMarkdownBasicInfo(outputPath, updates)
   }
 
-  async getMetadata(projectSlug: string): Promise<AnalysisMetadata | null> {
-    try {
-      const storageRoot = this.getStorageRoot()
-      const metaPath = path.join(storageRoot, '.analysis_metadata.json')
-      if (await fs.pathExists(metaPath)) {
-        return await fs.readJson(metaPath)
-      }
-      return null
-    } catch {
-      return null
-    }
-  }
-
   /**
    * 判断当前存储目录下是否已经存在任意解析结果。
    * 规则：
-   * - 若元数据文件 .analysis_metadata.json 已存在，则认为“有结果”；
-   * - 否则在存储根目录下递归查找任意 .md 结果文件（如 index.md 或文件级解析结果）。
+   * - 在存储根目录下递归查找任意 .md 结果文件（如 index.md 或文件级解析结果）。
    */
   async hasAnyResult(projectSlug: string): Promise<boolean> {
     try {
       const storageRoot = this.getStorageRoot()
       if (!(await fs.pathExists(storageRoot))) {
         return false
-      }
-
-      const metaPath = path.join(storageRoot, '.analysis_metadata.json')
-      if (await fs.pathExists(metaPath)) {
-        return true
       }
 
       const entries = await fs.readdir(storageRoot, { withFileTypes: true })
