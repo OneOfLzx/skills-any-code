@@ -46,3 +46,9 @@ sac
 <p align="center">
   <img src="docs/readme_img.png" alt="Skill Any Code Bottom-Up Parsing and Navigation Workflow" width="90%" />
 </p>
+
+
+## TODO
+1.  支持没有代码的文件解析，例如mk文件
+2.  解析文件中的结构体定义
+3.  解析文件的全局变量
